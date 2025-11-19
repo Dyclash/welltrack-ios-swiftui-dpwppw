@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { router } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -53,122 +53,116 @@ export default function MoodLogModal() {
     router.back();
   };
 
-  const dismissKeyboard = () => {
-    Keyboard.dismiss();
-  };
-
   return (
     <KeyboardAvoidingView 
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <TouchableWithoutFeedback onPress={dismissKeyboard}>
-        <View style={styles.overlay}>
-          <Animated.View entering={FadeIn} style={styles.backdrop}>
+      <View style={styles.overlay}>
+        <Animated.View entering={FadeIn} style={styles.backdrop}>
+          <TouchableOpacity 
+            style={styles.backdropTouchable}
+            onPress={() => router.back()}
+            activeOpacity={1}
+          />
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.springify()} style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <View style={styles.headerLeft}>
+              <IconSymbol 
+                ios_icon_name="face.smiling"
+                android_material_icon_name="mood"
+                size={28} 
+                color={colors.primary}
+              />
+              <Text style={styles.modalTitle}>Log Your Mood</Text>
+            </View>
             <TouchableOpacity 
-              style={styles.backdropTouchable}
               onPress={() => router.back()}
-              activeOpacity={1}
-            />
-          </Animated.View>
-
-          <Animated.View entering={FadeInDown.springify()} style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <View style={styles.headerLeft}>
-                <IconSymbol 
-                  ios_icon_name="face.smiling"
-                  android_material_icon_name="mood"
-                  size={28} 
-                  color={colors.primary}
-                />
-                <Text style={styles.modalTitle}>Log Your Mood</Text>
-              </View>
-              <TouchableOpacity 
-                onPress={() => router.back()}
-                style={styles.closeButton}
-              >
-                <IconSymbol 
-                  ios_icon_name="xmark.circle.fill"
-                  android_material_icon_name="cancel"
-                  size={28} 
-                  color={colors.textSecondary}
-                />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView 
-              style={styles.scrollView}
-              contentContainerStyle={styles.scrollContent}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
+              style={styles.closeButton}
             >
-              <Text style={styles.sectionLabel}>How are you feeling?</Text>
-              <View style={styles.moodGrid}>
-                {moods.map((mood, index) => (
-                  <React.Fragment key={index}>
-                    <TouchableOpacity
-                      style={[
-                        styles.moodButton,
-                        selectedMood?.label === mood.label && [
-                          styles.moodButtonSelected,
-                          { borderColor: mood.color }
-                        ],
-                      ]}
-                      onPress={() => handleMoodSelect(mood)}
-                    >
-                      <Text style={styles.moodEmoji}>{mood.emoji}</Text>
-                      <Text style={[
-                        styles.moodLabel,
-                        selectedMood?.label === mood.label && { color: mood.color }
-                      ]}>
-                        {mood.label}
-                      </Text>
-                    </TouchableOpacity>
-                  </React.Fragment>
-                ))}
-              </View>
+              <IconSymbol 
+                ios_icon_name="xmark.circle.fill"
+                android_material_icon_name="cancel"
+                size={28} 
+                color={colors.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
 
-              {selectedMood && (
-                <Animated.View entering={FadeInDown.delay(100)}>
-                  <Text style={styles.sectionLabel}>Add a note (optional)</Text>
-                  <TextInput
-                    style={styles.noteInput}
-                    placeholder="What's on your mind?"
-                    placeholderTextColor={colors.textSecondary}
-                    value={note}
-                    onChangeText={setNote}
-                    multiline
-                    numberOfLines={4}
-                    textAlignVertical="top"
-                    returnKeyType="done"
-                    blurOnSubmit={true}
-                    onSubmitEditing={dismissKeyboard}
-                  />
-                </Animated.View>
-              )}
-            </ScrollView>
-
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity 
-                style={[
-                  styles.saveButton,
-                  !selectedMood && styles.saveButtonDisabled
-                ]}
-                onPress={handleSave}
-                disabled={!selectedMood}
-              >
-                <IconSymbol 
-                  ios_icon_name="checkmark.circle.fill"
-                  android_material_icon_name="check-circle"
-                  size={24} 
-                  color={colors.card}
-                />
-                <Text style={styles.saveButtonText}>Save Mood</Text>
-              </TouchableOpacity>
+          <ScrollView 
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Text style={styles.sectionLabel}>How are you feeling?</Text>
+            <View style={styles.moodGrid}>
+              {moods.map((mood, index) => (
+                <React.Fragment key={index}>
+                  <TouchableOpacity
+                    style={[
+                      styles.moodButton,
+                      selectedMood?.label === mood.label && [
+                        styles.moodButtonSelected,
+                        { borderColor: mood.color }
+                      ],
+                    ]}
+                    onPress={() => handleMoodSelect(mood)}
+                  >
+                    <Text style={styles.moodEmoji}>{mood.emoji}</Text>
+                    <Text style={[
+                      styles.moodLabel,
+                      selectedMood?.label === mood.label && { color: mood.color }
+                    ]}>
+                      {mood.label}
+                    </Text>
+                  </TouchableOpacity>
+                </React.Fragment>
+              ))}
             </View>
-          </Animated.View>
-        </View>
-      </TouchableWithoutFeedback>
+
+            {selectedMood && (
+              <Animated.View entering={FadeInDown.delay(100)}>
+                <Text style={styles.sectionLabel}>Add a note (optional)</Text>
+                <TextInput
+                  style={styles.noteInput}
+                  placeholder="What's on your mind?"
+                  placeholderTextColor={colors.textSecondary}
+                  value={note}
+                  onChangeText={setNote}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                  returnKeyType="done"
+                  blurOnSubmit={true}
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                />
+              </Animated.View>
+            )}
+          </ScrollView>
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity 
+              style={[
+                styles.saveButton,
+                !selectedMood && styles.saveButtonDisabled
+              ]}
+              onPress={handleSave}
+              disabled={!selectedMood}
+            >
+              <IconSymbol 
+                ios_icon_name="checkmark.circle.fill"
+                android_material_icon_name="check-circle"
+                size={24} 
+                color={colors.card}
+              />
+              <Text style={styles.saveButtonText}>Save Mood</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </View>
     </KeyboardAvoidingView>
   );
 }
