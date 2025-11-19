@@ -34,6 +34,16 @@ export interface Symptom {
   androidIcon: string;
 }
 
+export interface MoodEntry {
+  id: string;
+  mood: string;
+  emoji: string;
+  value: number;
+  note?: string;
+  time: string;
+  date: string;
+}
+
 export interface WeightEntry {
   id: string;
   weight: number;
@@ -60,6 +70,7 @@ interface DataContextType {
   meals: Meal[];
   activities: Activity[];
   symptoms: Symptom[];
+  moodEntries: MoodEntry[];
   weightEntries: WeightEntry[];
   weightGoal: WeightGoal | null;
   milestones: Milestone[];
@@ -71,6 +82,8 @@ interface DataContextType {
   deleteActivity: (id: string) => void;
   addSymptom: (symptom: Omit<Symptom, 'id' | 'date'>) => void;
   deleteSymptom: (id: string) => void;
+  addMoodEntry: (mood: Omit<MoodEntry, 'id' | 'date'>) => void;
+  deleteMoodEntry: (id: string) => void;
   addWeightEntry: (entry: Omit<WeightEntry, 'id' | 'date' | 'time'>) => void;
   deleteWeightEntry: (id: string) => void;
   setWeightGoal: (goal: WeightGoal) => void;
@@ -83,6 +96,7 @@ interface DataContextType {
   getTodaysMeals: () => Meal[];
   getTodaysActivities: () => Activity[];
   getTodaysSymptoms: () => Symptom[];
+  getTodaysMoodEntries: () => MoodEntry[];
   exportData: () => string;
 }
 
@@ -147,6 +161,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   ]);
 
   const [symptoms, setSymptoms] = useState<Symptom[]>([]);
+
+  const [moodEntries, setMoodEntries] = useState<MoodEntry[]>([]);
 
   const [height, setHeightState] = useState<number>(170);
 
@@ -262,6 +278,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const deleteSymptom = (id: string) => {
     setSymptoms(prev => prev.filter(symptom => symptom.id !== id));
     console.log('Symptom deleted:', id);
+  };
+
+  const addMoodEntry = (mood: Omit<MoodEntry, 'id' | 'date'>) => {
+    const newMoodEntry: MoodEntry = {
+      ...mood,
+      id: Date.now().toString(),
+      date: new Date().toDateString(),
+    };
+    setMoodEntries(prev => [...prev, newMoodEntry]);
+    console.log('Mood entry added:', newMoodEntry);
+  };
+
+  const deleteMoodEntry = (id: string) => {
+    setMoodEntries(prev => prev.filter(entry => entry.id !== id));
+    console.log('Mood entry deleted:', id);
   };
 
   const addWeightEntry = (entry: Omit<WeightEntry, 'id' | 'date' | 'time'>) => {
@@ -386,6 +417,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return symptoms.filter(symptom => symptom.date === today);
   };
 
+  const getTodaysMoodEntries = () => {
+    const today = new Date().toDateString();
+    return moodEntries.filter(entry => entry.date === today);
+  };
+
   const exportData = (): string => {
     const data = {
       exportDate: new Date().toISOString(),
@@ -402,10 +438,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
       meals,
       activities,
       symptoms,
+      moodEntries,
       summary: {
         totalMeals: meals.length,
         totalActivities: activities.length,
         totalSymptoms: symptoms.length,
+        totalMoodEntries: moodEntries.length,
         totalWeightEntries: weightEntries.length,
         weightProgress: getWeightProgress(),
       }
@@ -419,6 +457,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         meals,
         activities,
         symptoms,
+        moodEntries,
         weightEntries,
         weightGoal,
         milestones,
@@ -430,6 +469,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         deleteActivity,
         addSymptom,
         deleteSymptom,
+        addMoodEntry,
+        deleteMoodEntry,
         addWeightEntry,
         deleteWeightEntry,
         setWeightGoal,
@@ -442,6 +483,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         getTodaysMeals,
         getTodaysActivities,
         getTodaysSymptoms,
+        getTodaysMoodEntries,
         exportData,
       }}
     >
