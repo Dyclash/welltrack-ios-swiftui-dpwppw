@@ -67,7 +67,7 @@ export default function ActivityScreen() {
   };
 
   const handleDeleteActivity = (id: string, name: string) => {
-    console.log('Delete activity pressed:', id, name);
+    console.log('Delete activity button pressed - ID:', id, 'Name:', name);
     Alert.alert(
       'Delete Activity',
       `Are you sure you want to delete "${name}"?`,
@@ -77,7 +77,7 @@ export default function ActivityScreen() {
           text: 'Delete', 
           style: 'destructive',
           onPress: () => {
-            console.log('Deleting activity:', id);
+            console.log('Confirmed deletion for activity ID:', id);
             deleteActivity(id);
           }
         },
@@ -223,9 +223,9 @@ export default function ActivityScreen() {
             </View>
           ) : (
             activities.map((activity, index) => (
-              <React.Fragment key={index}>
+              <React.Fragment key={activity.id}>
                 <View style={styles.activityCard}>
-                  <View style={styles.activityMainContent}>
+                  <View style={styles.activityContent}>
                     <View style={styles.activityIcon}>
                       <IconSymbol 
                         ios_icon_name={activity.icon} 
@@ -245,9 +245,12 @@ export default function ActivityScreen() {
                   </View>
                   <TouchableOpacity 
                     style={styles.deleteButton}
-                    onPress={() => handleDeleteActivity(activity.id, activity.name)}
-                    activeOpacity={0.6}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    onPress={() => {
+                      console.log('Delete button tapped for:', activity.id, activity.name);
+                      handleDeleteActivity(activity.id, activity.name);
+                    }}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
                   >
                     <IconSymbol 
                       ios_icon_name="trash.fill" 
@@ -550,7 +553,7 @@ const styles = StyleSheet.create({
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
     elevation: 2,
   },
-  activityMainContent: {
+  activityContent: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
