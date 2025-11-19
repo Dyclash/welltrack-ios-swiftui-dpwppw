@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Modal, TextInput, Alert, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/IconSymbol";
@@ -29,12 +29,24 @@ export default function ProfileScreen() {
   const [showHeightModal, setShowHeightModal] = useState(false);
   const [tempNickname, setTempNickname] = useState(nickname);
   const [targetWeight, setTargetWeight] = useState('');
-  const [newHeight, setNewHeight] = useState(height.toString());
+  const [newHeight, setNewHeight] = useState('');
 
   const currentWeight = getCurrentWeight();
   const bmi = getBMI();
   const bmiCategory = getBMICategory();
   const progress = getWeightProgress();
+
+  useEffect(() => {
+    if (showHeightModal) {
+      setNewHeight(height.toString());
+    }
+  }, [showHeightModal, height]);
+
+  useEffect(() => {
+    if (showNicknameModal) {
+      setTempNickname(nickname);
+    }
+  }, [showNicknameModal, nickname]);
 
   const handleSaveNickname = () => {
     setNickname(tempNickname.trim());
@@ -64,12 +76,21 @@ export default function ProfileScreen() {
   };
 
   const handleSetHeight = () => {
-    if (!newHeight || isNaN(Number(newHeight))) {
-      Alert.alert('Error', 'Please enter a valid height');
+    const heightValue = newHeight.trim();
+    
+    if (!heightValue || isNaN(Number(heightValue))) {
+      Alert.alert('Error', 'Please enter a valid height in centimeters');
       return;
     }
 
-    setHeight(Number(newHeight));
+    const parsedHeight = Number(heightValue);
+    
+    if (parsedHeight < 50 || parsedHeight > 300) {
+      Alert.alert('Error', 'Please enter a realistic height between 50 and 300 cm');
+      return;
+    }
+
+    setHeight(parsedHeight);
     setShowHeightModal(false);
     Alert.alert('Success', 'Height updated successfully!');
   };
@@ -390,8 +411,15 @@ export default function ProfileScreen() {
                 placeholderTextColor={colors.textSecondary}
                 value={newHeight}
                 onChangeText={setNewHeight}
-                keyboardType="numeric"
+                keyboardType="number-pad"
+                autoFocus={true}
               />
+            </View>
+
+            <View style={styles.infoBox}>
+              <Text style={styles.infoBoxText}>
+                Current height: {height} cm
+              </Text>
             </View>
 
             <TouchableOpacity style={styles.submitButton} onPress={handleSetHeight}>
@@ -691,5 +719,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text,
     fontWeight: '500',
+  },
+  infoBox: {
+    backgroundColor: colors.highlight,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  infoBoxText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });
