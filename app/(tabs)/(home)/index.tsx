@@ -16,7 +16,7 @@ interface DailyStats {
 }
 
 export default function HomeScreen() {
-  const { getTodaysMeals, getTodaysActivities, getTodaysMoodEntries } = useData();
+  const { getTodaysMeals, getTodaysActivities, getTodaysMoodEntries, deleteMoodEntry } = useData();
   const { currentStepCount, isPedometerAvailable } = usePedometer();
   const todaysMeals = getTodaysMeals();
   const todaysActivities = getTodaysActivities();
@@ -36,6 +36,11 @@ export default function HomeScreen() {
   const waterPercentage = (dailyStats.water.current / dailyStats.water.goal) * 100;
   const stepsGoal = 10000;
   const stepsPercentage = (currentStepCount / stepsGoal) * 100;
+
+  const handleDeleteMood = (id: string) => {
+    console.log('Deleting mood entry:', id);
+    deleteMoodEntry(id);
+  };
 
   return (
     <View style={styles.container}>
@@ -147,6 +152,17 @@ export default function HomeScreen() {
                         </Text>
                       )}
                     </View>
+                    <TouchableOpacity
+                      onPress={() => handleDeleteMood(entry.id)}
+                      style={styles.deleteButton}
+                    >
+                      <IconSymbol
+                        ios_icon_name="trash.fill"
+                        android_material_icon_name="delete"
+                        size={20}
+                        color={colors.secondary}
+                      />
+                    </TouchableOpacity>
                   </View>
                 </React.Fragment>
               ))}
@@ -450,6 +466,15 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontStyle: 'italic',
     marginTop: 4,
+  },
+  deleteButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
   },
   mealCard: {
     backgroundColor: colors.card,
