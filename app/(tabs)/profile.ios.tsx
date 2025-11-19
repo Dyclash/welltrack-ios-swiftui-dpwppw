@@ -411,7 +411,7 @@ export default function ProfileScreen() {
                   placeholderTextColor={colors.textSecondary}
                   value={targetWeight}
                   onChangeText={setTargetWeight}
-                  keyboardType="decimal-pad"
+                  keyboardType="numeric"
                   returnKeyType="done"
                   onSubmitEditing={handleSetGoal}
                   blurOnSubmit={true}
@@ -471,7 +471,7 @@ export default function ProfileScreen() {
                   placeholderTextColor={colors.textSecondary}
                   value={newHeight}
                   onChangeText={setNewHeight}
-                  keyboardType="number-pad"
+                  keyboardType="numeric"
                   autoFocus={true}
                   returnKeyType="done"
                   onSubmitEditing={handleSetHeight}

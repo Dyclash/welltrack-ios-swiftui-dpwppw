@@ -1,8 +1,7 @@
-
 {
   "expo": {
-    "name": "Balance Day",
-    "slug": "BalanceDay",
+    "name": "WellTrack",
+    "slug": "WellTrack",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/natively-dark.png",
@@ -45,5 +44,5 @@
       "router": {}
     }
   },
-  "scheme": "BalanceDay"
+  "scheme": "WellTrack"
 }
