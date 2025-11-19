@@ -6,6 +6,7 @@ import { IconSymbol } from "@/components/IconSymbol";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useData } from "@/contexts/DataContext";
 import { usePedometer } from "@/hooks/usePedometer";
+import { router } from "expo-router";
 
 interface DailyStats {
   calories: { current: number; goal: number };
@@ -42,10 +43,26 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* Header with inline mood button as fallback */}
         <Animated.View entering={FadeInDown.delay(100)} style={styles.header}>
-          <Text style={styles.greeting}>Good Morning!</Text>
-          <Text style={styles.date}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
+          <View>
+            <Text style={styles.greeting}>Good Morning!</Text>
+            <Text style={styles.date}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => {
+              console.log('Inline mood button pressed (iOS)');
+              router.push('/mood-log-modal');
+            }}
+            style={styles.moodButton}
+          >
+            <IconSymbol
+              ios_icon_name="face.smiling"
+              android_material_icon_name="mood"
+              size={28}
+              color={colors.primary}
+            />
+          </TouchableOpacity>
         </Animated.View>
 
         {/* Main Calorie Card */}
@@ -219,12 +236,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: Platform.OS === 'ios' ? 20 : 60,
+    paddingTop: 20,
     paddingHorizontal: 20,
     paddingBottom: 120,
   },
   header: {
     marginBottom: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   greeting: {
     fontSize: 32,
@@ -236,6 +256,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
     fontWeight: '500',
+  },
+  moodButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    elevation: 3,
   },
   mainCard: {
     backgroundColor: colors.card,

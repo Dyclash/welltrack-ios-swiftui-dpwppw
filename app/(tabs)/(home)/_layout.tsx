@@ -13,15 +13,25 @@ export default function HomeLayout() {
         options={{
           headerShown: Platform.OS === 'ios',
           title: 'Home',
+          headerLargeTitle: false,
+          headerTransparent: false,
+          headerBlurEffect: 'systemMaterial',
           headerRight: () => (
             <TouchableOpacity
-              onPress={() => router.push('/mood-log-modal')}
-              style={{ padding: 8 }}
+              onPress={() => {
+                console.log('Mood button pressed');
+                router.push('/mood-log-modal');
+              }}
+              style={{ 
+                padding: 8,
+                marginRight: 4,
+              }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <IconSymbol
                 ios_icon_name="face.smiling"
                 android_material_icon_name="mood"
-                size={24}
+                size={26}
                 color={colors.primary}
               />
             </TouchableOpacity>
