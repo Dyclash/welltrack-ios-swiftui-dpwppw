@@ -16,10 +16,11 @@ interface DailyStats {
 }
 
 export default function HomeScreen() {
-  const { getTodaysMeals, getTodaysActivities } = useData();
+  const { getTodaysMeals, getTodaysActivities, getTodaysMoodEntries } = useData();
   const { currentStepCount, isPedometerAvailable } = usePedometer();
   const todaysMeals = getTodaysMeals();
   const todaysActivities = getTodaysActivities();
+  const todaysMoodEntries = getTodaysMoodEntries();
 
   const totalCalories = todaysMeals.reduce((sum, meal) => sum + meal.calories, 0);
   const calorieGoal = 2000;
@@ -122,6 +123,36 @@ export default function HomeScreen() {
             </View>
           </Animated.View>
         </View>
+
+        {/* Today's Mood */}
+        {todaysMoodEntries.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(375)} style={styles.sectionContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Today&apos;s Mood</Text>
+            </View>
+            
+            <View style={styles.moodEntriesContainer}>
+              {todaysMoodEntries.map((entry, index) => (
+                <React.Fragment key={index}>
+                  <View style={styles.moodEntryCard}>
+                    <View style={styles.moodEmojiContainer}>
+                      <Text style={styles.moodEntryEmoji}>{entry.emoji}</Text>
+                    </View>
+                    <View style={styles.moodEntryInfo}>
+                      <Text style={styles.moodEntryMood}>{entry.mood}</Text>
+                      <Text style={styles.moodEntryTime}>{entry.time}</Text>
+                      {entry.note && (
+                        <Text style={styles.moodEntryNote} numberOfLines={2}>
+                          {entry.note}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                </React.Fragment>
+              ))}
+            </View>
+          </Animated.View>
+        )}
 
         {/* Today's Meals */}
         <Animated.View entering={FadeInDown.delay(400)} style={styles.sectionContainer}>
@@ -375,6 +406,50 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.primary,
     fontWeight: '600',
+  },
+  moodEntriesContainer: {
+    gap: 12,
+  },
+  moodEntryCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.05)',
+    elevation: 1,
+  },
+  moodEmojiContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.highlight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  moodEntryEmoji: {
+    fontSize: 32,
+  },
+  moodEntryInfo: {
+    flex: 1,
+  },
+  moodEntryMood: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 2,
+  },
+  moodEntryTime: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  moodEntryNote: {
+    fontSize: 14,
+    color: colors.text,
+    fontStyle: 'italic',
+    marginTop: 4,
   },
   mealCard: {
     backgroundColor: colors.card,
