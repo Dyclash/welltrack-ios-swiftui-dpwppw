@@ -6,7 +6,6 @@ import { IconSymbol } from "@/components/IconSymbol";
 import { colors } from "@/styles/commonStyles";
 import { useData } from "@/contexts/DataContext";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { BlurView } from 'expo-blur';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
@@ -132,7 +131,7 @@ export default function ProfileScreen() {
           <Text style={styles.subtitle}>Your wellness profile</Text>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(200)} style={styles.glassCard}>
+        <Animated.View entering={FadeInDown.delay(200)} style={styles.card}>
           <View style={styles.profileHeader}>
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
@@ -155,7 +154,7 @@ export default function ProfileScreen() {
           </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(250)} style={styles.glassCard}>
+        <Animated.View entering={FadeInDown.delay(250)} style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Current Stats</Text>
           </View>
@@ -195,7 +194,7 @@ export default function ProfileScreen() {
           </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(300)} style={styles.glassCard}>
+        <Animated.View entering={FadeInDown.delay(300)} style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Weight Goal</Text>
             <TouchableOpacity onPress={() => setShowGoalModal(true)}>
@@ -226,7 +225,7 @@ export default function ProfileScreen() {
           )}
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(350)} style={styles.glassCard}>
+        <Animated.View entering={FadeInDown.delay(350)} style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>BMI Category</Text>
             <TouchableOpacity onPress={() => setShowHeightModal(true)}>
@@ -437,9 +436,9 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontWeight: '500',
   },
-  glassCard: {
-    backgroundColor: colors.glass,
-    borderColor: colors.glassBorder,
+  card: {
+    backgroundColor: colors.card,
+    borderColor: colors.cardBorder,
     borderWidth: 1,
     borderRadius: 24,
     padding: 20,
@@ -531,7 +530,7 @@ const styles = StyleSheet.create({
   },
   progressBarContainer: {
     height: 12,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.background,
     borderRadius: 6,
     overflow: 'hidden',
     marginBottom: 12,
@@ -589,8 +588,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   exportButton: {
-    backgroundColor: colors.glass,
-    borderColor: colors.glassBorder,
+    backgroundColor: colors.card,
+    borderColor: colors.cardBorder,
     borderWidth: 1,
     borderRadius: 16,
     padding: 18,
@@ -608,8 +607,8 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   infoCard: {
-    backgroundColor: colors.glass,
-    borderColor: colors.glassBorder,
+    backgroundColor: colors.card,
+    borderColor: colors.cardBorder,
     borderWidth: 1,
     borderRadius: 16,
     padding: 16,
@@ -634,7 +633,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 40,
     borderTopWidth: 1,
-    borderTopColor: colors.glassBorder,
+    borderTopColor: colors.cardBorder,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -657,13 +656,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    backgroundColor: colors.glass,
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
     color: colors.text,
     borderWidth: 1,
-    borderColor: colors.glassBorder,
+    borderColor: colors.cardBorder,
   },
   submitButton: {
     backgroundColor: colors.primary,
@@ -680,13 +679,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   goalInfoBox: {
-    backgroundColor: colors.glass,
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
     gap: 8,
     borderWidth: 1,
-    borderColor: colors.glassBorder,
+    borderColor: colors.cardBorder,
   },
   goalInfoText: {
     fontSize: 14,
