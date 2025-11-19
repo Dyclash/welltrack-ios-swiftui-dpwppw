@@ -1,13 +1,11 @@
 
 import React from "react";
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Dimensions } from "react-native";
+import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Platform } from "react-native";
 import { colors } from "@/styles/commonStyles";
 import { IconSymbol } from "@/components/IconSymbol";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useData } from "@/contexts/DataContext";
 import { usePedometer } from "@/hooks/usePedometer";
-
-const { width } = Dimensions.get('window');
 
 interface DailyStats {
   calories: { current: number; goal: number };
@@ -221,7 +219,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 60,
+    paddingTop: Platform.OS === 'android' ? 60 : 20,
     paddingHorizontal: 20,
     paddingBottom: 120,
   },
