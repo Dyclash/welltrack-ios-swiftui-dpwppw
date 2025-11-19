@@ -1,31 +1,72 @@
 
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity, TextInput } from "react-native";
+import { ScrollView, StyleSheet, View, Text, TouchableOpacity, TextInput, Modal, Alert } from "react-native";
 import { colors } from "@/styles/commonStyles";
 import { IconSymbol } from "@/components/IconSymbol";
 import Animated, { FadeInDown } from "react-native-reanimated";
-
-interface Meal {
-  id: string;
-  name: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  time: string;
-}
+import { useData } from "@/contexts/DataContext";
 
 export default function FoodScreen() {
-  const [meals] = useState<Meal[]>([
-    { id: '1', name: 'Oatmeal with berries', calories: 350, protein: 12, carbs: 58, fat: 8, time: '8:30 AM' },
-    { id: '2', name: 'Grilled chicken salad', calories: 550, protein: 45, carbs: 32, fat: 22, time: '12:45 PM' },
-    { id: '3', name: 'Salmon with vegetables', calories: 550, protein: 42, carbs: 28, fat: 26, time: '7:00 PM' },
-  ]);
+  const { getTodaysMeals, addMeal, deleteMeal } = useData();
+  const meals = getTodaysMeals();
+  
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [mealName, setMealName] = useState('');
+  const [calories, setCalories] = useState('');
+  const [protein, setProtein] = useState('');
+  const [carbs, setCarbs] = useState('');
+  const [fat, setFat] = useState('');
 
   const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
   const totalProtein = meals.reduce((sum, meal) => sum + meal.protein, 0);
   const totalCarbs = meals.reduce((sum, meal) => sum + meal.carbs, 0);
   const totalFat = meals.reduce((sum, meal) => sum + meal.fat, 0);
+
+  const handleAddMeal = () => {
+    if (!mealName.trim()) {
+      Alert.alert('Error', 'Please enter a meal name');
+      return;
+    }
+    if (!calories || isNaN(Number(calories))) {
+      Alert.alert('Error', 'Please enter valid calories');
+      return;
+    }
+
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+    addMeal({
+      name: mealName.trim(),
+      calories: Number(calories),
+      protein: Number(protein) || 0,
+      carbs: Number(carbs) || 0,
+      fat: Number(fat) || 0,
+      time: timeString,
+    });
+
+    // Reset form
+    setMealName('');
+    setCalories('');
+    setProtein('');
+    setCarbs('');
+    setFat('');
+    setShowAddModal(false);
+  };
+
+  const handleDeleteMeal = (id: string, name: string) => {
+    Alert.alert(
+      'Delete Meal',
+      `Are you sure you want to delete "${name}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: () => deleteMeal(id)
+        },
+      ]
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -65,7 +106,7 @@ export default function FoodScreen() {
 
         {/* Add Meal Button */}
         <Animated.View entering={FadeInDown.delay(300)}>
-          <TouchableOpacity style={styles.addButton}>
+          <TouchableOpacity style={styles.addButton} onPress={() => setShowAddModal(true)}>
             <IconSymbol 
               ios_icon_name="plus.circle.fill" 
               android_material_icon_name="add-circle" 
@@ -79,74 +120,155 @@ export default function FoodScreen() {
         {/* Meals List */}
         <Animated.View entering={FadeInDown.delay(400)} style={styles.mealsSection}>
           <Text style={styles.sectionTitle}>Today&apos;s Meals</Text>
-          {meals.map((meal, index) => (
-            <React.Fragment key={index}>
-              <View style={styles.mealCard}>
-                <View style={styles.mealHeader}>
-                  <View style={styles.mealTitleContainer}>
-                    <IconSymbol 
-                      ios_icon_name="fork.knife" 
-                      android_material_icon_name="restaurant" 
-                      size={20} 
-                      color={colors.primary}
-                    />
-                    <View style={styles.mealTextContainer}>
-                      <Text style={styles.mealName}>{meal.name}</Text>
-                      <Text style={styles.mealTime}>{meal.time}</Text>
+          {meals.length === 0 ? (
+            <View style={styles.emptyState}>
+              <IconSymbol 
+                ios_icon_name="fork.knife" 
+                android_material_icon_name="restaurant" 
+                size={48} 
+                color={colors.textSecondary}
+              />
+              <Text style={styles.emptyText}>No meals logged yet</Text>
+              <Text style={styles.emptySubtext}>Tap the button above to add your first meal</Text>
+            </View>
+          ) : (
+            meals.map((meal, index) => (
+              <React.Fragment key={index}>
+                <View style={styles.mealCard}>
+                  <View style={styles.mealHeader}>
+                    <View style={styles.mealTitleContainer}>
+                      <IconSymbol 
+                        ios_icon_name="fork.knife" 
+                        android_material_icon_name="restaurant" 
+                        size={20} 
+                        color={colors.primary}
+                      />
+                      <View style={styles.mealTextContainer}>
+                        <Text style={styles.mealName}>{meal.name}</Text>
+                        <Text style={styles.mealTime}>{meal.time}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.mealRightContainer}>
+                      <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
+                      <TouchableOpacity 
+                        style={styles.deleteButton}
+                        onPress={() => handleDeleteMeal(meal.id, meal.name)}
+                      >
+                        <IconSymbol 
+                          ios_icon_name="trash.fill" 
+                          android_material_icon_name="delete" 
+                          size={20} 
+                          color={colors.error}
+                        />
+                      </TouchableOpacity>
                     </View>
                   </View>
-                  <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
+                  <View style={styles.macroRow}>
+                    <View style={styles.macroTag}>
+                      <Text style={styles.macroTagText}>P: {meal.protein}g</Text>
+                    </View>
+                    <View style={styles.macroTag}>
+                      <Text style={styles.macroTagText}>C: {meal.carbs}g</Text>
+                    </View>
+                    <View style={styles.macroTag}>
+                      <Text style={styles.macroTagText}>F: {meal.fat}g</Text>
+                    </View>
+                  </View>
                 </View>
-                <View style={styles.macroRow}>
-                  <View style={styles.macroTag}>
-                    <Text style={styles.macroTagText}>P: {meal.protein}g</Text>
-                  </View>
-                  <View style={styles.macroTag}>
-                    <Text style={styles.macroTagText}>C: {meal.carbs}g</Text>
-                  </View>
-                  <View style={styles.macroTag}>
-                    <Text style={styles.macroTagText}>F: {meal.fat}g</Text>
-                  </View>
-                </View>
-              </View>
-            </React.Fragment>
-          ))}
-        </Animated.View>
-
-        {/* Quick Add Section */}
-        <Animated.View entering={FadeInDown.delay(500)} style={styles.quickAddSection}>
-          <Text style={styles.sectionTitle}>Quick Add</Text>
-          <View style={styles.quickAddGrid}>
-            <TouchableOpacity style={styles.quickAddCard}>
-              <IconSymbol 
-                ios_icon_name="cup.and.saucer.fill" 
-                android_material_icon_name="coffee" 
-                size={32} 
-                color={colors.accent}
-              />
-              <Text style={styles.quickAddText}>Snack</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.quickAddCard}>
-              <IconSymbol 
-                ios_icon_name="drop.fill" 
-                android_material_icon_name="water-drop" 
-                size={32} 
-                color={colors.primary}
-              />
-              <Text style={styles.quickAddText}>Water</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.quickAddCard}>
-              <IconSymbol 
-                ios_icon_name="camera.fill" 
-                android_material_icon_name="camera-alt" 
-                size={32} 
-                color={colors.secondary}
-              />
-              <Text style={styles.quickAddText}>Scan</Text>
-            </TouchableOpacity>
-          </View>
+              </React.Fragment>
+            ))
+          )}
         </Animated.View>
       </ScrollView>
+
+      {/* Add Meal Modal */}
+      <Modal
+        visible={showAddModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAddModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Log New Meal</Text>
+              <TouchableOpacity onPress={() => setShowAddModal(false)}>
+                <IconSymbol 
+                  ios_icon_name="xmark.circle.fill" 
+                  android_material_icon_name="cancel" 
+                  size={28} 
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Meal Name *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g., Chicken Salad"
+                  placeholderTextColor={colors.textSecondary}
+                  value={mealName}
+                  onChangeText={setMealName}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Calories *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g., 350"
+                  placeholderTextColor={colors.textSecondary}
+                  value={calories}
+                  onChangeText={setCalories}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Protein (g)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g., 25"
+                  placeholderTextColor={colors.textSecondary}
+                  value={protein}
+                  onChangeText={setProtein}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Carbs (g)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g., 40"
+                  placeholderTextColor={colors.textSecondary}
+                  value={carbs}
+                  onChangeText={setCarbs}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Fat (g)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g., 15"
+                  placeholderTextColor={colors.textSecondary}
+                  value={fat}
+                  onChangeText={setFat}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <TouchableOpacity style={styles.submitButton} onPress={handleAddMeal}>
+                <Text style={styles.submitButtonText}>Add Meal</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -269,10 +391,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
   },
+  mealRightContainer: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
   mealCalories: {
     fontSize: 18,
     fontWeight: '700',
     color: colors.primary,
+  },
+  deleteButton: {
+    padding: 4,
   },
   macroRow: {
     flexDirection: 'row',
@@ -289,26 +418,78 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textSecondary,
   },
-  quickAddSection: {
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 48,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 24,
   },
-  quickAddGrid: {
-    flexDirection: 'row',
-    gap: 12,
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text,
   },
-  quickAddCard: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
+  modalScroll: {
+    maxHeight: 500,
   },
-  quickAddText: {
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.text,
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  submitButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    padding: 18,
+    alignItems: 'center',
     marginTop: 8,
+  },
+  submitButtonText: {
+    color: colors.card,
+    fontSize: 18,
+    fontWeight: '700',
   },
 });

@@ -1,9 +1,10 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Dimensions } from "react-native";
 import { colors } from "@/styles/commonStyles";
 import { IconSymbol } from "@/components/IconSymbol";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { useData } from "@/contexts/DataContext";
 
 const { width } = Dimensions.get('window');
 
@@ -15,14 +16,21 @@ interface DailyStats {
 }
 
 export default function HomeScreen() {
-  const [dailyStats] = useState<DailyStats>({
-    calories: { current: 1450, goal: 2000 },
+  const { getTodaysMeals, getTodaysActivities } = useData();
+  const todaysMeals = getTodaysMeals();
+  const todaysActivities = getTodaysActivities();
+
+  const totalCalories = todaysMeals.reduce((sum, meal) => sum + meal.calories, 0);
+  const calorieGoal = 2000;
+
+  const [dailyStats] = React.useState<DailyStats>({
+    calories: { current: totalCalories, goal: calorieGoal },
     water: { current: 6, goal: 8 },
     steps: { current: 7234, goal: 10000 },
     weight: 165.5,
   });
 
-  const caloriePercentage = (dailyStats.calories.current / dailyStats.calories.goal) * 100;
+  const caloriePercentage = (totalCalories / calorieGoal) * 100;
   const waterPercentage = (dailyStats.water.current / dailyStats.water.goal) * 100;
   const stepsPercentage = (dailyStats.steps.current / dailyStats.steps.goal) * 100;
 
@@ -51,15 +59,15 @@ export default function HomeScreen() {
             <Text style={styles.mainCardTitle}>Daily Calories</Text>
           </View>
           <View style={styles.calorieContent}>
-            <Text style={styles.calorieNumber}>{dailyStats.calories.current}</Text>
-            <Text style={styles.calorieGoal}>/ {dailyStats.calories.goal} kcal</Text>
+            <Text style={styles.calorieNumber}>{totalCalories}</Text>
+            <Text style={styles.calorieGoal}>/ {calorieGoal} kcal</Text>
           </View>
           <View style={styles.progressBarContainer}>
             <View style={[styles.progressBar, { width: `${Math.min(caloriePercentage, 100)}%` }]} />
           </View>
           <Text style={styles.remainingText}>
-            {dailyStats.calories.goal - dailyStats.calories.current > 0 
-              ? `${dailyStats.calories.goal - dailyStats.calories.current} kcal remaining`
+            {calorieGoal - totalCalories > 0 
+              ? `${calorieGoal - totalCalories} kcal remaining`
               : 'Goal reached!'}
           </Text>
         </Animated.View>
@@ -104,53 +112,79 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
           
-          <View style={styles.mealCard}>
-            <View style={styles.mealIcon}>
+          {todaysMeals.length === 0 ? (
+            <View style={styles.emptyCard}>
               <IconSymbol 
-                ios_icon_name="sunrise.fill" 
-                android_material_icon_name="wb-sunny" 
-                size={24} 
-                color={colors.accent}
+                ios_icon_name="fork.knife" 
+                android_material_icon_name="restaurant" 
+                size={32} 
+                color={colors.textSecondary}
               />
+              <Text style={styles.emptyText}>No meals logged yet</Text>
             </View>
-            <View style={styles.mealInfo}>
-              <Text style={styles.mealName}>Breakfast</Text>
-              <Text style={styles.mealDescription}>Oatmeal with berries</Text>
-            </View>
-            <Text style={styles.mealCalories}>350 kcal</Text>
-          </View>
+          ) : (
+            todaysMeals.slice(0, 3).map((meal, index) => (
+              <React.Fragment key={index}>
+                <View style={styles.mealCard}>
+                  <View style={styles.mealIcon}>
+                    <IconSymbol 
+                      ios_icon_name="fork.knife" 
+                      android_material_icon_name="restaurant" 
+                      size={24} 
+                      color={index === 0 ? colors.accent : index === 1 ? colors.primary : colors.secondary}
+                    />
+                  </View>
+                  <View style={styles.mealInfo}>
+                    <Text style={styles.mealName}>{meal.name}</Text>
+                    <Text style={styles.mealDescription}>{meal.time}</Text>
+                  </View>
+                  <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
+                </View>
+              </React.Fragment>
+            ))
+          )}
+        </Animated.View>
 
-          <View style={styles.mealCard}>
-            <View style={styles.mealIcon}>
-              <IconSymbol 
-                ios_icon_name="sun.max.fill" 
-                android_material_icon_name="wb-sunny" 
-                size={24} 
-                color={colors.primary}
-              />
-            </View>
-            <View style={styles.mealInfo}>
-              <Text style={styles.mealName}>Lunch</Text>
-              <Text style={styles.mealDescription}>Grilled chicken salad</Text>
-            </View>
-            <Text style={styles.mealCalories}>550 kcal</Text>
+        {/* Today's Activities */}
+        <Animated.View entering={FadeInDown.delay(450)} style={styles.sectionContainer}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Today&apos;s Activities</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAllText}>See All</Text>
+            </TouchableOpacity>
           </View>
-
-          <View style={styles.mealCard}>
-            <View style={styles.mealIcon}>
+          
+          {todaysActivities.length === 0 ? (
+            <View style={styles.emptyCard}>
               <IconSymbol 
-                ios_icon_name="moon.stars.fill" 
-                android_material_icon_name="nightlight" 
-                size={24} 
-                color={colors.secondary}
+                ios_icon_name="figure.run" 
+                android_material_icon_name="directions-run" 
+                size={32} 
+                color={colors.textSecondary}
               />
+              <Text style={styles.emptyText}>No activities logged yet</Text>
             </View>
-            <View style={styles.mealInfo}>
-              <Text style={styles.mealName}>Dinner</Text>
-              <Text style={styles.mealDescription}>Salmon with vegetables</Text>
-            </View>
-            <Text style={styles.mealCalories}>550 kcal</Text>
-          </View>
+          ) : (
+            todaysActivities.slice(0, 2).map((activity, index) => (
+              <React.Fragment key={index}>
+                <View style={styles.mealCard}>
+                  <View style={styles.mealIcon}>
+                    <IconSymbol 
+                      ios_icon_name={activity.icon} 
+                      android_material_icon_name={activity.androidIcon} 
+                      size={24} 
+                      color={colors.primary}
+                    />
+                  </View>
+                  <View style={styles.mealInfo}>
+                    <Text style={styles.mealName}>{activity.name}</Text>
+                    <Text style={styles.mealDescription}>{activity.duration} min • {activity.time}</Text>
+                  </View>
+                  <Text style={styles.mealCalories}>{activity.calories} kcal</Text>
+                </View>
+              </React.Fragment>
+            ))
+          )}
         </Animated.View>
 
         {/* Health Insights */}
@@ -165,7 +199,7 @@ export default function HomeScreen() {
             <Text style={styles.insightTitle}>Health Insight</Text>
           </View>
           <Text style={styles.insightText}>
-            You&apos;re doing great! You&apos;ve maintained a balanced diet for 5 days in a row. Keep up the good work!
+            You&apos;re doing great! You&apos;ve logged {todaysMeals.length} meal{todaysMeals.length !== 1 ? 's' : ''} and {todaysActivities.length} activit{todaysActivities.length !== 1 ? 'ies' : 'y'} today. Keep up the good work!
           </Text>
         </Animated.View>
       </ScrollView>
@@ -345,6 +379,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: colors.primary,
+  },
+  emptyCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 32,
+    alignItems: 'center',
+    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.05)',
+    elevation: 1,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 12,
+    fontWeight: '500',
   },
   insightCard: {
     backgroundColor: colors.highlight,

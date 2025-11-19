@@ -1,31 +1,90 @@
 
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity } from "react-native";
+import { ScrollView, StyleSheet, View, Text, TouchableOpacity, TextInput, Modal, Alert } from "react-native";
 import { colors } from "@/styles/commonStyles";
 import { IconSymbol } from "@/components/IconSymbol";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { useData } from "@/contexts/DataContext";
 
-interface Activity {
-  id: string;
-  name: string;
-  duration: number;
-  calories: number;
-  time: string;
-  icon: string;
-  androidIcon: string;
-}
+const activityTypes = [
+  { name: 'Running', icon: 'figure.run', androidIcon: 'directions-run' },
+  { name: 'Walking', icon: 'figure.walk', androidIcon: 'directions-walk' },
+  { name: 'Cycling', icon: 'bicycle', androidIcon: 'directions-bike' },
+  { name: 'Swimming', icon: 'figure.pool.swim', androidIcon: 'pool' },
+  { name: 'Yoga', icon: 'figure.yoga', androidIcon: 'self-improvement' },
+  { name: 'Gym', icon: 'dumbbell.fill', androidIcon: 'fitness-center' },
+];
 
 export default function ActivityScreen() {
-  const [activities] = useState<Activity[]>([
-    { id: '1', name: 'Morning Run', duration: 30, calories: 320, time: '7:00 AM', icon: 'figure.run', androidIcon: 'directions-run' },
-    { id: '2', name: 'Yoga Session', duration: 45, calories: 180, time: '6:00 PM', icon: 'figure.yoga', androidIcon: 'self-improvement' },
-  ]);
+  const { getTodaysActivities, addActivity, deleteActivity } = useData();
+  const activities = getTodaysActivities();
+  
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [activityName, setActivityName] = useState('');
+  const [duration, setDuration] = useState('');
+  const [calories, setCalories] = useState('');
+  const [selectedType, setSelectedType] = useState(activityTypes[0]);
 
   const totalDuration = activities.reduce((sum, activity) => sum + activity.duration, 0);
   const totalCalories = activities.reduce((sum, activity) => sum + activity.calories, 0);
   const stepsGoal = 10000;
   const currentSteps = 7234;
   const stepsPercentage = (currentSteps / stepsGoal) * 100;
+
+  const handleAddActivity = () => {
+    if (!activityName.trim()) {
+      Alert.alert('Error', 'Please enter an activity name');
+      return;
+    }
+    if (!duration || isNaN(Number(duration))) {
+      Alert.alert('Error', 'Please enter valid duration');
+      return;
+    }
+    if (!calories || isNaN(Number(calories))) {
+      Alert.alert('Error', 'Please enter valid calories');
+      return;
+    }
+
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+    addActivity({
+      name: activityName.trim(),
+      duration: Number(duration),
+      calories: Number(calories),
+      time: timeString,
+      icon: selectedType.icon,
+      androidIcon: selectedType.androidIcon,
+    });
+
+    // Reset form
+    setActivityName('');
+    setDuration('');
+    setCalories('');
+    setSelectedType(activityTypes[0]);
+    setShowAddModal(false);
+  };
+
+  const handleDeleteActivity = (id: string, name: string) => {
+    Alert.alert(
+      'Delete Activity',
+      `Are you sure you want to delete "${name}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: () => deleteActivity(id)
+        },
+      ]
+    );
+  };
+
+  const handleQuickAdd = (type: typeof activityTypes[0]) => {
+    setSelectedType(type);
+    setActivityName(type.name);
+    setShowAddModal(true);
+  };
 
   return (
     <View style={styles.container}>
@@ -91,7 +150,7 @@ export default function ActivityScreen() {
 
         {/* Add Activity Button */}
         <Animated.View entering={FadeInDown.delay(400)}>
-          <TouchableOpacity style={styles.addButton}>
+          <TouchableOpacity style={styles.addButton} onPress={() => setShowAddModal(true)}>
             <IconSymbol 
               ios_icon_name="plus.circle.fill" 
               android_material_icon_name="add-circle" 
@@ -105,61 +164,74 @@ export default function ActivityScreen() {
         {/* Activities List */}
         <Animated.View entering={FadeInDown.delay(500)} style={styles.activitiesSection}>
           <Text style={styles.sectionTitle}>Today&apos;s Activities</Text>
-          {activities.map((activity, index) => (
-            <React.Fragment key={index}>
-              <View style={styles.activityCard}>
-                <View style={styles.activityIcon}>
-                  <IconSymbol 
-                    ios_icon_name={activity.icon} 
-                    android_material_icon_name={activity.androidIcon} 
-                    size={24} 
-                    color={colors.primary}
-                  />
+          {activities.length === 0 ? (
+            <View style={styles.emptyState}>
+              <IconSymbol 
+                ios_icon_name="figure.run" 
+                android_material_icon_name="directions-run" 
+                size={48} 
+                color={colors.textSecondary}
+              />
+              <Text style={styles.emptyText}>No activities logged yet</Text>
+              <Text style={styles.emptySubtext}>Tap the button above to add your first activity</Text>
+            </View>
+          ) : (
+            activities.map((activity, index) => (
+              <React.Fragment key={index}>
+                <View style={styles.activityCard}>
+                  <View style={styles.activityIcon}>
+                    <IconSymbol 
+                      ios_icon_name={activity.icon} 
+                      android_material_icon_name={activity.androidIcon} 
+                      size={24} 
+                      color={colors.primary}
+                    />
+                  </View>
+                  <View style={styles.activityInfo}>
+                    <Text style={styles.activityName}>{activity.name}</Text>
+                    <Text style={styles.activityTime}>{activity.time}</Text>
+                  </View>
+                  <View style={styles.activityStats}>
+                    <Text style={styles.activityDuration}>{activity.duration} min</Text>
+                    <Text style={styles.activityCalories}>{activity.calories} kcal</Text>
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.deleteButton}
+                    onPress={() => handleDeleteActivity(activity.id, activity.name)}
+                  >
+                    <IconSymbol 
+                      ios_icon_name="trash.fill" 
+                      android_material_icon_name="delete" 
+                      size={20} 
+                      color={colors.error}
+                    />
+                  </TouchableOpacity>
                 </View>
-                <View style={styles.activityInfo}>
-                  <Text style={styles.activityName}>{activity.name}</Text>
-                  <Text style={styles.activityTime}>{activity.time}</Text>
-                </View>
-                <View style={styles.activityStats}>
-                  <Text style={styles.activityDuration}>{activity.duration} min</Text>
-                  <Text style={styles.activityCalories}>{activity.calories} kcal</Text>
-                </View>
-              </View>
-            </React.Fragment>
-          ))}
+              </React.Fragment>
+            ))
+          )}
         </Animated.View>
 
         {/* Quick Activities */}
         <Animated.View entering={FadeInDown.delay(600)} style={styles.quickActivities}>
           <Text style={styles.sectionTitle}>Quick Log</Text>
           <View style={styles.quickGrid}>
-            <TouchableOpacity style={styles.quickCard}>
-              <IconSymbol 
-                ios_icon_name="figure.run" 
-                android_material_icon_name="directions-run" 
-                size={32} 
-                color={colors.secondary}
-              />
-              <Text style={styles.quickText}>Running</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.quickCard}>
-              <IconSymbol 
-                ios_icon_name="figure.walk" 
-                android_material_icon_name="directions-walk" 
-                size={32} 
-                color={colors.accent}
-              />
-              <Text style={styles.quickText}>Walking</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.quickCard}>
-              <IconSymbol 
-                ios_icon_name="dumbbell.fill" 
-                android_material_icon_name="fitness-center" 
-                size={32} 
-                color={colors.primary}
-              />
-              <Text style={styles.quickText}>Gym</Text>
-            </TouchableOpacity>
+            {activityTypes.slice(0, 3).map((type, index) => (
+              <React.Fragment key={index}>
+                <TouchableOpacity 
+                  style={styles.quickCard}
+                  onPress={() => handleQuickAdd(type)}
+                >
+                  <IconSymbol 
+                    ios_icon_name={type.icon} 
+                    android_material_icon_name={type.androidIcon} 
+                    size={32} 
+                    color={index === 0 ? colors.secondary : index === 1 ? colors.accent : colors.primary}
+                  />
+                  <Text style={styles.quickText}>{type.name}</Text>
+                </TouchableOpacity>
+              </React.Fragment>
+            ))}
           </View>
         </Animated.View>
 
@@ -179,6 +251,104 @@ export default function ActivityScreen() {
           </Text>
         </Animated.View>
       </ScrollView>
+
+      {/* Add Activity Modal */}
+      <Modal
+        visible={showAddModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAddModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Log Activity</Text>
+              <TouchableOpacity onPress={() => setShowAddModal(false)}>
+                <IconSymbol 
+                  ios_icon_name="xmark.circle.fill" 
+                  android_material_icon_name="cancel" 
+                  size={28} 
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Activity Type</Text>
+                <View style={styles.typeGrid}>
+                  {activityTypes.map((type, index) => (
+                    <React.Fragment key={index}>
+                      <TouchableOpacity
+                        style={[
+                          styles.typeCard,
+                          selectedType.name === type.name && styles.typeCardSelected
+                        ]}
+                        onPress={() => {
+                          setSelectedType(type);
+                          setActivityName(type.name);
+                        }}
+                      >
+                        <IconSymbol 
+                          ios_icon_name={type.icon} 
+                          android_material_icon_name={type.androidIcon} 
+                          size={24} 
+                          color={selectedType.name === type.name ? colors.card : colors.primary}
+                        />
+                        <Text style={[
+                          styles.typeText,
+                          selectedType.name === type.name && styles.typeTextSelected
+                        ]}>
+                          {type.name}
+                        </Text>
+                      </TouchableOpacity>
+                    </React.Fragment>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Activity Name *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g., Morning Run"
+                  placeholderTextColor={colors.textSecondary}
+                  value={activityName}
+                  onChangeText={setActivityName}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Duration (minutes) *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g., 30"
+                  placeholderTextColor={colors.textSecondary}
+                  value={duration}
+                  onChangeText={setDuration}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Calories Burned *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g., 250"
+                  placeholderTextColor={colors.textSecondary}
+                  value={calories}
+                  onChangeText={setCalories}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <TouchableOpacity style={styles.submitButton} onPress={handleAddActivity}>
+                <Text style={styles.submitButtonText}>Add Activity</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -341,6 +511,7 @@ const styles = StyleSheet.create({
   },
   activityStats: {
     alignItems: 'flex-end',
+    marginRight: 12,
   },
   activityDuration: {
     fontSize: 16,
@@ -352,6 +523,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     fontWeight: '600',
+  },
+  deleteButton: {
+    padding: 4,
   },
   quickActivities: {
     marginBottom: 24,
@@ -396,5 +570,106 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text,
     lineHeight: 20,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 48,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  modalScroll: {
+    maxHeight: 500,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  typeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  typeCard: {
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  typeCardSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  typeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  typeTextSelected: {
+    color: colors.card,
+  },
+  submitButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    padding: 18,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  submitButtonText: {
+    color: colors.card,
+    fontSize: 18,
+    fontWeight: '700',
   },
 });
