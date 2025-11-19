@@ -225,26 +225,29 @@ export default function ActivityScreen() {
             activities.map((activity, index) => (
               <React.Fragment key={index}>
                 <View style={styles.activityCard}>
-                  <View style={styles.activityIcon}>
-                    <IconSymbol 
-                      ios_icon_name={activity.icon} 
-                      android_material_icon_name={activity.androidIcon} 
-                      size={24} 
-                      color={colors.primary}
-                    />
-                  </View>
-                  <View style={styles.activityInfo}>
-                    <Text style={styles.activityName}>{activity.name}</Text>
-                    <Text style={styles.activityTime}>{activity.time}</Text>
-                  </View>
-                  <View style={styles.activityStats}>
-                    <Text style={styles.activityDuration}>{activity.duration} min</Text>
-                    <Text style={styles.activityCalories}>{activity.calories} kcal</Text>
+                  <View style={styles.activityMainContent}>
+                    <View style={styles.activityIcon}>
+                      <IconSymbol 
+                        ios_icon_name={activity.icon} 
+                        android_material_icon_name={activity.androidIcon} 
+                        size={24} 
+                        color={colors.primary}
+                      />
+                    </View>
+                    <View style={styles.activityInfo}>
+                      <Text style={styles.activityName}>{activity.name}</Text>
+                      <Text style={styles.activityTime}>{activity.time}</Text>
+                    </View>
+                    <View style={styles.activityStats}>
+                      <Text style={styles.activityDuration}>{activity.duration} min</Text>
+                      <Text style={styles.activityCalories}>{activity.calories} kcal</Text>
+                    </View>
                   </View>
                   <TouchableOpacity 
                     style={styles.deleteButton}
                     onPress={() => handleDeleteActivity(activity.id, activity.name)}
-                    activeOpacity={0.7}
+                    activeOpacity={0.6}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
                     <IconSymbol 
                       ios_icon_name="trash.fill" 
@@ -543,11 +546,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: 12,
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
     elevation: 2,
+  },
+  activityMainContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   activityIcon: {
     width: 48,
@@ -573,7 +579,6 @@ const styles = StyleSheet.create({
   },
   activityStats: {
     alignItems: 'flex-end',
-    marginRight: 12,
   },
   activityDuration: {
     fontSize: 16,
@@ -587,7 +592,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   deleteButton: {
-    padding: 8,
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-end',
   },
   motivationCard: {
     backgroundColor: colors.highlight,
