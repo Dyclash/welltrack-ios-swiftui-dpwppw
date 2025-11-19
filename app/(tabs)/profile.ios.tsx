@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, Share } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, Share, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/IconSymbol";
 import { colors } from "@/styles/commonStyles";
@@ -115,6 +115,26 @@ export default function ProfileScreen() {
     } catch (error) {
       console.error('Export error:', error);
       Alert.alert('Error', 'Failed to export data. Please try again.');
+    }
+  };
+
+  const handleContactUs = async () => {
+    const email = 'support@balanceday.app';
+    const subject = 'Balance Day Support';
+    const body = 'Hi Balance Day team,\n\n';
+    
+    const url = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Error', 'Unable to open email client. Please email us at support@balanceday.app');
+      }
+    } catch (error) {
+      console.error('Contact us error:', error);
+      Alert.alert('Error', 'Unable to open email client. Please email us at support@balanceday.app');
     }
   };
 
@@ -279,6 +299,24 @@ export default function ProfileScreen() {
         <View style={styles.infoCard}>
           <Text style={styles.infoText}>
             Export your data to analyze your progress, share with healthcare providers, or keep a backup.
+          </Text>
+        </View>
+
+        <Animated.View entering={FadeInDown.delay(450)}>
+          <TouchableOpacity style={styles.contactButton} onPress={handleContactUs}>
+            <IconSymbol 
+              ios_icon_name="envelope.fill" 
+              android_material_icon_name="email" 
+              size={24} 
+              color={colors.text}
+            />
+            <Text style={styles.contactButtonText}>Contact Us</Text>
+          </TouchableOpacity>
+        </Animated.View>
+
+        <View style={styles.contactInfoCard}>
+          <Text style={styles.contactInfoText}>
+            Have questions or feedback? We&apos;d love to hear from you!
           </Text>
         </View>
       </ScrollView>
@@ -626,6 +664,39 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   infoText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  contactButton: {
+    backgroundColor: colors.card,
+    borderColor: colors.cardBorder,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    boxShadow: '0px 4px 16px rgba(102, 126, 234, 0.3)',
+    elevation: 4,
+  },
+  contactButtonText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+  contactInfoCard: {
+    backgroundColor: colors.card,
+    borderColor: colors.cardBorder,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+  },
+  contactInfoText: {
     fontSize: 13,
     color: colors.textSecondary,
     lineHeight: 20,
