@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Modal, TextInput, Alert, Share, Linking } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Modal, TextInput, Alert, Share, Linking, Keyboard } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/IconSymbol";
 import { colors } from "@/styles/commonStyles";
@@ -49,6 +49,7 @@ export default function ProfileScreen() {
   }, [showNicknameModal, nickname]);
 
   const handleSaveNickname = () => {
+    Keyboard.dismiss();
     setNickname(tempNickname.trim());
     setShowNicknameModal(false);
     Alert.alert('Success', 'Nickname updated successfully!');
@@ -59,6 +60,8 @@ export default function ProfileScreen() {
       Alert.alert('Error', 'Please enter a valid target weight');
       return;
     }
+
+    Keyboard.dismiss();
 
     const now = new Date();
     const target = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
@@ -90,6 +93,7 @@ export default function ProfileScreen() {
       return;
     }
 
+    Keyboard.dismiss();
     setHeight(parsedHeight);
     setShowHeightModal(false);
     Alert.alert('Success', 'Height updated successfully!');
@@ -341,36 +345,48 @@ export default function ProfileScreen() {
         transparent={true}
         onRequestClose={() => setShowNicknameModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Profile</Text>
-              <TouchableOpacity onPress={() => setShowNicknameModal(false)}>
-                <IconSymbol 
-                  ios_icon_name="xmark.circle.fill" 
-                  android_material_icon_name="cancel" 
-                  size={28} 
-                  color={colors.textSecondary}
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => {
+            Keyboard.dismiss();
+            setShowNicknameModal(false);
+          }}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Edit Profile</Text>
+                <TouchableOpacity onPress={() => setShowNicknameModal(false)}>
+                  <IconSymbol 
+                    ios_icon_name="xmark.circle.fill" 
+                    android_material_icon_name="cancel" 
+                    size={28} 
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Nickname</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your nickname"
+                  placeholderTextColor={colors.textSecondary}
+                  value={tempNickname}
+                  onChangeText={setTempNickname}
+                  returnKeyType="done"
+                  onSubmitEditing={handleSaveNickname}
+                  blurOnSubmit={true}
                 />
+              </View>
+
+              <TouchableOpacity style={styles.submitButton} onPress={handleSaveNickname}>
+                <Text style={styles.submitButtonText}>Save</Text>
               </TouchableOpacity>
             </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Nickname</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your nickname"
-                placeholderTextColor={colors.textSecondary}
-                value={tempNickname}
-                onChangeText={setTempNickname}
-              />
-            </View>
-
-            <TouchableOpacity style={styles.submitButton} onPress={handleSaveNickname}>
-              <Text style={styles.submitButtonText}>Save</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       <Modal
@@ -379,46 +395,58 @@ export default function ProfileScreen() {
         transparent={true}
         onRequestClose={() => setShowGoalModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Set Weight Goal</Text>
-              <TouchableOpacity onPress={() => setShowGoalModal(false)}>
-                <IconSymbol 
-                  ios_icon_name="xmark.circle.fill" 
-                  android_material_icon_name="cancel" 
-                  size={28} 
-                  color={colors.textSecondary}
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => {
+            Keyboard.dismiss();
+            setShowGoalModal(false);
+          }}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Set Weight Goal</Text>
+                <TouchableOpacity onPress={() => setShowGoalModal(false)}>
+                  <IconSymbol 
+                    ios_icon_name="xmark.circle.fill" 
+                    android_material_icon_name="cancel" 
+                    size={28} 
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Target Weight (kg) *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g., 70"
+                  placeholderTextColor={colors.textSecondary}
+                  value={targetWeight}
+                  onChangeText={setTargetWeight}
+                  keyboardType="decimal-pad"
+                  returnKeyType="done"
+                  onSubmitEditing={handleSetGoal}
+                  blurOnSubmit={true}
                 />
+              </View>
+
+              <View style={styles.goalInfoBox}>
+                <Text style={styles.goalInfoText}>
+                  Current Weight: {currentWeight?.toFixed(1) || 'N/A'} kg
+                </Text>
+                <Text style={styles.goalInfoText}>
+                  Goal will be set for 90 days from today
+                </Text>
+              </View>
+
+              <TouchableOpacity style={styles.submitButton} onPress={handleSetGoal}>
+                <Text style={styles.submitButtonText}>Set Goal</Text>
               </TouchableOpacity>
             </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Target Weight (kg) *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g., 70"
-                placeholderTextColor={colors.textSecondary}
-                value={targetWeight}
-                onChangeText={setTargetWeight}
-                keyboardType="decimal-pad"
-              />
-            </View>
-
-            <View style={styles.goalInfoBox}>
-              <Text style={styles.goalInfoText}>
-                Current Weight: {currentWeight?.toFixed(1) || 'N/A'} kg
-              </Text>
-              <Text style={styles.goalInfoText}>
-                Goal will be set for 90 days from today
-              </Text>
-            </View>
-
-            <TouchableOpacity style={styles.submitButton} onPress={handleSetGoal}>
-              <Text style={styles.submitButtonText}>Set Goal</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       <Modal
@@ -427,44 +455,56 @@ export default function ProfileScreen() {
         transparent={true}
         onRequestClose={() => setShowHeightModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Update Height</Text>
-              <TouchableOpacity onPress={() => setShowHeightModal(false)}>
-                <IconSymbol 
-                  ios_icon_name="xmark.circle.fill" 
-                  android_material_icon_name="cancel" 
-                  size={28} 
-                  color={colors.textSecondary}
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => {
+            Keyboard.dismiss();
+            setShowHeightModal(false);
+          }}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Update Height</Text>
+                <TouchableOpacity onPress={() => setShowHeightModal(false)}>
+                  <IconSymbol 
+                    ios_icon_name="xmark.circle.fill" 
+                    android_material_icon_name="cancel" 
+                    size={28} 
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Height (cm) *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g., 170"
+                  placeholderTextColor={colors.textSecondary}
+                  value={newHeight}
+                  onChangeText={setNewHeight}
+                  keyboardType="number-pad"
+                  autoFocus={true}
+                  returnKeyType="done"
+                  onSubmitEditing={handleSetHeight}
+                  blurOnSubmit={true}
                 />
+              </View>
+
+              <View style={styles.infoBox}>
+                <Text style={styles.infoBoxText}>
+                  Current height: {height} cm
+                </Text>
+              </View>
+
+              <TouchableOpacity style={styles.submitButton} onPress={handleSetHeight}>
+                <Text style={styles.submitButtonText}>Update Height</Text>
               </TouchableOpacity>
             </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Height (cm) *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g., 170"
-                placeholderTextColor={colors.textSecondary}
-                value={newHeight}
-                onChangeText={setNewHeight}
-                keyboardType="number-pad"
-                autoFocus={true}
-              />
-            </View>
-
-            <View style={styles.infoBox}>
-              <Text style={styles.infoBoxText}>
-                Current height: {height} cm
-              </Text>
-            </View>
-
-            <TouchableOpacity style={styles.submitButton} onPress={handleSetHeight}>
-              <Text style={styles.submitButtonText}>Update Height</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );
