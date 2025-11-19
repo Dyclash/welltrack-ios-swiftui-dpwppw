@@ -1,6 +1,6 @@
 
 import React from "react";
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Platform } from "react-native";
+import { ScrollView, StyleSheet, View, Text, TouchableOpacity } from "react-native";
 import { colors } from "@/styles/commonStyles";
 import { IconSymbol } from "@/components/IconSymbol";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -49,19 +49,20 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>Good Morning!</Text>
             <Text style={styles.date}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
           </View>
-          {Platform.OS === 'android' && (
-            <TouchableOpacity
-              onPress={() => router.push('/mood-log-modal')}
-              style={styles.moodButton}
-            >
-              <IconSymbol
-                ios_icon_name="face.smiling"
-                android_material_icon_name="mood"
-                size={28}
-                color={colors.primary}
-              />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            onPress={() => {
+              console.log('Mood button pressed from Android screen');
+              router.push('/mood-log-modal');
+            }}
+            style={styles.moodButton}
+          >
+            <IconSymbol
+              ios_icon_name="face.smiling"
+              android_material_icon_name="mood"
+              size={28}
+              color="#FFFFFF"
+            />
+          </TouchableOpacity>
         </Animated.View>
 
         {/* Main Calorie Card */}
@@ -235,7 +236,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: Platform.OS === 'android' ? 60 : 20,
+    paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 120,
   },
@@ -257,14 +258,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   moodButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.card,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
-    elevation: 3,
+    boxShadow: '0px 4px 12px rgba(102, 126, 234, 0.4)',
+    elevation: 5,
   },
   mainCard: {
     backgroundColor: colors.card,
