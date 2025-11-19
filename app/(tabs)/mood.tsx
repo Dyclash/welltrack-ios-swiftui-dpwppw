@@ -1,9 +1,10 @@
 
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity } from "react-native";
+import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Modal, TextInput, Alert } from "react-native";
 import { colors } from "@/styles/commonStyles";
 import { IconSymbol } from "@/components/IconSymbol";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { useData } from "@/contexts/DataContext";
 
 interface MoodEntry {
   id: string;
@@ -21,13 +22,96 @@ const moods = [
   { emoji: '😢', label: 'Bad', color: colors.secondary },
 ];
 
+const symptomTypes = [
+  { name: 'Headache', icon: 'head.profile', androidIcon: 'face' },
+  { name: 'Fatigue', icon: 'bed.double.fill', androidIcon: 'hotel' },
+  { name: 'Stress', icon: 'heart.fill', androidIcon: 'favorite' },
+  { name: 'Nausea', icon: 'cross.circle.fill', androidIcon: 'cancel' },
+  { name: 'Pain', icon: 'bandage.fill', androidIcon: 'healing' },
+  { name: 'Fever', icon: 'thermometer', androidIcon: 'thermostat' },
+];
+
 export default function MoodScreen() {
+  const { symptoms, addSymptom, deleteSymptom, getTodaysSymptoms } = useData();
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [moodHistory] = useState<MoodEntry[]>([
     { id: '1', mood: 'Great', emoji: '😊', time: '9:00 AM', note: 'Had a great workout!' },
     { id: '2', mood: 'Good', emoji: '🙂', time: '2:00 PM', note: 'Productive work session' },
     { id: '3', mood: 'Okay', emoji: '😐', time: '6:00 PM' },
   ]);
+
+  const [symptomModalVisible, setSymptomModalVisible] = useState(false);
+  const [selectedSymptom, setSelectedSymptom] = useState<typeof symptomTypes[0] | null>(null);
+  const [symptomSeverity, setSymptomSeverity] = useState<'mild' | 'moderate' | 'severe'>('mild');
+  const [symptomNote, setSymptomNote] = useState('');
+
+  const todaysSymptoms = getTodaysSymptoms();
+
+  const handleSymptomSelect = (symptom: typeof symptomTypes[0]) => {
+    setSelectedSymptom(symptom);
+    setSymptomModalVisible(true);
+    console.log('Symptom selected:', symptom.name);
+  };
+
+  const handleSaveSymptom = () => {
+    if (!selectedSymptom) {
+      console.log('No symptom selected');
+      return;
+    }
+
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
+
+    addSymptom({
+      name: selectedSymptom.name,
+      severity: symptomSeverity,
+      note: symptomNote.trim() || undefined,
+      time: timeString,
+      icon: selectedSymptom.icon,
+      androidIcon: selectedSymptom.androidIcon,
+    });
+
+    setSymptomModalVisible(false);
+    setSelectedSymptom(null);
+    setSymptomSeverity('mild');
+    setSymptomNote('');
+    console.log('Symptom saved successfully');
+  };
+
+  const handleDeleteSymptom = (id: string) => {
+    Alert.alert(
+      'Delete Symptom',
+      'Are you sure you want to delete this symptom?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: () => {
+            deleteSymptom(id);
+            console.log('Symptom deleted:', id);
+          }
+        },
+      ]
+    );
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'mild':
+        return colors.success;
+      case 'moderate':
+        return colors.accent;
+      case 'severe':
+        return colors.secondary;
+      default:
+        return colors.textSecondary;
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -115,8 +199,74 @@ export default function MoodScreen() {
           ))}
         </Animated.View>
 
+        {/* Symptoms Tracker */}
+        <Animated.View entering={FadeInDown.delay(500)} style={styles.symptomsCard}>
+          <Text style={styles.cardTitle}>Track Symptoms</Text>
+          <Text style={styles.symptomsSubtitle}>Log any health symptoms you&apos;re experiencing</Text>
+          <View style={styles.symptomsGrid}>
+            {symptomTypes.map((symptom, index) => (
+              <React.Fragment key={index}>
+                <TouchableOpacity 
+                  style={styles.symptomButton}
+                  onPress={() => handleSymptomSelect(symptom)}
+                >
+                  <IconSymbol 
+                    ios_icon_name={symptom.icon}
+                    android_material_icon_name={symptom.androidIcon}
+                    size={24} 
+                    color={colors.primary}
+                  />
+                  <Text style={styles.symptomText}>{symptom.name}</Text>
+                </TouchableOpacity>
+              </React.Fragment>
+            ))}
+          </View>
+        </Animated.View>
+
+        {/* Today's Symptoms */}
+        {todaysSymptoms.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(600)} style={styles.symptomsLogSection}>
+            <Text style={styles.sectionTitle}>Today&apos;s Symptoms</Text>
+            {todaysSymptoms.map((symptom, index) => (
+              <React.Fragment key={index}>
+                <View style={styles.symptomLogCard}>
+                  <View style={styles.symptomLogIcon}>
+                    <IconSymbol 
+                      ios_icon_name={symptom.icon}
+                      android_material_icon_name={symptom.androidIcon}
+                      size={24} 
+                      color={getSeverityColor(symptom.severity)}
+                    />
+                  </View>
+                  <View style={styles.symptomLogInfo}>
+                    <View style={styles.symptomLogHeader}>
+                      <Text style={styles.symptomLogName}>{symptom.name}</Text>
+                      <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(symptom.severity) }]}>
+                        <Text style={styles.severityText}>{symptom.severity}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.symptomLogTime}>{symptom.time}</Text>
+                    {symptom.note && <Text style={styles.symptomLogNote}>{symptom.note}</Text>}
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.deleteButton}
+                    onPress={() => handleDeleteSymptom(symptom.id)}
+                  >
+                    <IconSymbol 
+                      ios_icon_name="trash.fill"
+                      android_material_icon_name="delete"
+                      size={20} 
+                      color={colors.secondary}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </React.Fragment>
+            ))}
+          </Animated.View>
+        )}
+
         {/* Wellness Tips */}
-        <Animated.View entering={FadeInDown.delay(500)} style={styles.tipsCard}>
+        <Animated.View entering={FadeInDown.delay(700)} style={styles.tipsCard}>
           <View style={styles.tipsHeader}>
             <IconSymbol 
               ios_icon_name="lightbulb.fill" 
@@ -145,42 +295,90 @@ export default function MoodScreen() {
             </View>
           </View>
         </Animated.View>
-
-        {/* Symptoms Tracker */}
-        <Animated.View entering={FadeInDown.delay(600)} style={styles.symptomsCard}>
-          <Text style={styles.cardTitle}>Track Symptoms</Text>
-          <Text style={styles.symptomsSubtitle}>Log any health symptoms you&apos;re experiencing</Text>
-          <View style={styles.symptomsGrid}>
-            <TouchableOpacity style={styles.symptomButton}>
-              <IconSymbol 
-                ios_icon_name="head.profile" 
-                android_material_icon_name="face" 
-                size={24} 
-                color={colors.primary}
-              />
-              <Text style={styles.symptomText}>Headache</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.symptomButton}>
-              <IconSymbol 
-                ios_icon_name="bed.double.fill" 
-                android_material_icon_name="hotel" 
-                size={24} 
-                color={colors.primary}
-              />
-              <Text style={styles.symptomText}>Fatigue</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.symptomButton}>
-              <IconSymbol 
-                ios_icon_name="heart.fill" 
-                android_material_icon_name="favorite" 
-                size={24} 
-                color={colors.primary}
-              />
-              <Text style={styles.symptomText}>Stress</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
       </ScrollView>
+
+      {/* Symptom Modal */}
+      <Modal
+        visible={symptomModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setSymptomModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Log Symptom</Text>
+              <TouchableOpacity 
+                onPress={() => setSymptomModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <IconSymbol 
+                  ios_icon_name="xmark.circle.fill"
+                  android_material_icon_name="cancel"
+                  size={28} 
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {selectedSymptom && (
+              <>
+                <View style={styles.modalSymptomHeader}>
+                  <IconSymbol 
+                    ios_icon_name={selectedSymptom.icon}
+                    android_material_icon_name={selectedSymptom.androidIcon}
+                    size={32} 
+                    color={colors.primary}
+                  />
+                  <Text style={styles.modalSymptomName}>{selectedSymptom.name}</Text>
+                </View>
+
+                <Text style={styles.modalLabel}>Severity</Text>
+                <View style={styles.severityButtons}>
+                  {(['mild', 'moderate', 'severe'] as const).map((severity, index) => (
+                    <React.Fragment key={index}>
+                      <TouchableOpacity
+                        style={[
+                          styles.severityButton,
+                          symptomSeverity === severity && styles.severityButtonSelected,
+                          { borderColor: getSeverityColor(severity) }
+                        ]}
+                        onPress={() => setSymptomSeverity(severity)}
+                      >
+                        <Text style={[
+                          styles.severityButtonText,
+                          symptomSeverity === severity && { color: getSeverityColor(severity) }
+                        ]}>
+                          {severity.charAt(0).toUpperCase() + severity.slice(1)}
+                        </Text>
+                      </TouchableOpacity>
+                    </React.Fragment>
+                  ))}
+                </View>
+
+                <Text style={styles.modalLabel}>Notes (Optional)</Text>
+                <TextInput
+                  style={styles.noteInput}
+                  placeholder="Add any additional details..."
+                  placeholderTextColor={colors.textSecondary}
+                  value={symptomNote}
+                  onChangeText={setSymptomNote}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+
+                <TouchableOpacity 
+                  style={styles.modalSaveButton}
+                  onPress={handleSaveSymptom}
+                >
+                  <Text style={styles.modalSaveButtonText}>Save Symptom</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -404,10 +602,11 @@ const styles = StyleSheet.create({
   },
   symptomsGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
   },
   symptomButton: {
-    flex: 1,
+    width: '30%',
     backgroundColor: colors.background,
     borderRadius: 12,
     padding: 16,
@@ -418,5 +617,154 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: colors.text,
+  },
+  symptomsLogSection: {
+    marginBottom: 24,
+  },
+  symptomLogCard: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
+  },
+  symptomLogIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  symptomLogInfo: {
+    flex: 1,
+  },
+  symptomLogHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+    gap: 8,
+  },
+  symptomLogName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  severityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  severityText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.card,
+    textTransform: 'uppercase',
+  },
+  symptomLogTime: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  symptomLogNote: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
+  },
+  deleteButton: {
+    padding: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  modalSymptomHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 24,
+    padding: 16,
+    backgroundColor: colors.background,
+    borderRadius: 12,
+  },
+  modalSymptomName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  modalLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 12,
+  },
+  severityButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
+  },
+  severityButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+  severityButtonSelected: {
+    backgroundColor: colors.card,
+  },
+  severityButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  noteInput: {
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 14,
+    color: colors.text,
+    minHeight: 100,
+    marginBottom: 24,
+  },
+  modalSaveButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    boxShadow: '0px 4px 12px rgba(41, 128, 185, 0.3)',
+    elevation: 4,
+  },
+  modalSaveButtonText: {
+    color: colors.card,
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

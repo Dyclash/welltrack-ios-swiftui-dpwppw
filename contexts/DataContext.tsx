@@ -23,15 +23,30 @@ export interface Activity {
   androidIcon: string;
 }
 
+export interface Symptom {
+  id: string;
+  name: string;
+  severity: 'mild' | 'moderate' | 'severe';
+  note?: string;
+  time: string;
+  date: string;
+  icon: string;
+  androidIcon: string;
+}
+
 interface DataContextType {
   meals: Meal[];
   activities: Activity[];
+  symptoms: Symptom[];
   addMeal: (meal: Omit<Meal, 'id' | 'date'>) => void;
   deleteMeal: (id: string) => void;
   addActivity: (activity: Omit<Activity, 'id' | 'date'>) => void;
   deleteActivity: (id: string) => void;
+  addSymptom: (symptom: Omit<Symptom, 'id' | 'date'>) => void;
+  deleteSymptom: (id: string) => void;
   getTodaysMeals: () => Meal[];
   getTodaysActivities: () => Activity[];
+  getTodaysSymptoms: () => Symptom[];
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -93,6 +108,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     },
   ]);
 
+  const [symptoms, setSymptoms] = useState<Symptom[]>([]);
+
   const addMeal = (meal: Omit<Meal, 'id' | 'date'>) => {
     const newMeal: Meal = {
       ...meal,
@@ -123,6 +140,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
     console.log('Activity deleted:', id);
   };
 
+  const addSymptom = (symptom: Omit<Symptom, 'id' | 'date'>) => {
+    const newSymptom: Symptom = {
+      ...symptom,
+      id: Date.now().toString(),
+      date: new Date().toDateString(),
+    };
+    setSymptoms(prev => [...prev, newSymptom]);
+    console.log('Symptom added:', newSymptom);
+  };
+
+  const deleteSymptom = (id: string) => {
+    setSymptoms(prev => prev.filter(symptom => symptom.id !== id));
+    console.log('Symptom deleted:', id);
+  };
+
   const getTodaysMeals = () => {
     const today = new Date().toDateString();
     return meals.filter(meal => meal.date === today);
@@ -133,17 +165,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return activities.filter(activity => activity.date === today);
   };
 
+  const getTodaysSymptoms = () => {
+    const today = new Date().toDateString();
+    return symptoms.filter(symptom => symptom.date === today);
+  };
+
   return (
     <DataContext.Provider
       value={{
         meals,
         activities,
+        symptoms,
         addMeal,
         deleteMeal,
         addActivity,
         deleteActivity,
+        addSymptom,
+        deleteSymptom,
         getTodaysMeals,
         getTodaysActivities,
+        getTodaysSymptoms,
       }}
     >
       {children}
