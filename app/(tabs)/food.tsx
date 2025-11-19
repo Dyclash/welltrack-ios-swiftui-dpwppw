@@ -54,6 +54,7 @@ export default function FoodScreen() {
   };
 
   const handleDeleteMeal = (id: string, name: string) => {
+    console.log('Delete meal pressed:', id, name);
     Alert.alert(
       'Delete Meal',
       `Are you sure you want to delete "${name}"?`,
@@ -62,7 +63,10 @@ export default function FoodScreen() {
         { 
           text: 'Delete', 
           style: 'destructive',
-          onPress: () => deleteMeal(id)
+          onPress: () => {
+            console.log('Deleting meal:', id);
+            deleteMeal(id);
+          }
         },
       ]
     );
@@ -135,45 +139,46 @@ export default function FoodScreen() {
             meals.map((meal, index) => (
               <React.Fragment key={index}>
                 <View style={styles.mealCard}>
-                  <View style={styles.mealHeader}>
-                    <View style={styles.mealTitleContainer}>
-                      <IconSymbol 
-                        ios_icon_name="fork.knife" 
-                        android_material_icon_name="restaurant" 
-                        size={20} 
-                        color={colors.primary}
-                      />
-                      <View style={styles.mealTextContainer}>
-                        <Text style={styles.mealName}>{meal.name}</Text>
-                        <Text style={styles.mealTime}>{meal.time}</Text>
+                  <View style={styles.mealContent}>
+                    <View style={styles.mealHeader}>
+                      <View style={styles.mealTitleContainer}>
+                        <IconSymbol 
+                          ios_icon_name="fork.knife" 
+                          android_material_icon_name="restaurant" 
+                          size={20} 
+                          color={colors.primary}
+                        />
+                        <View style={styles.mealTextContainer}>
+                          <Text style={styles.mealName}>{meal.name}</Text>
+                          <Text style={styles.mealTime}>{meal.time}</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
+                    </View>
+                    <View style={styles.macroRow}>
+                      <View style={styles.macroTag}>
+                        <Text style={styles.macroTagText}>P: {meal.protein}g</Text>
+                      </View>
+                      <View style={styles.macroTag}>
+                        <Text style={styles.macroTagText}>C: {meal.carbs}g</Text>
+                      </View>
+                      <View style={styles.macroTag}>
+                        <Text style={styles.macroTagText}>F: {meal.fat}g</Text>
                       </View>
                     </View>
-                    <View style={styles.mealRightContainer}>
-                      <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
-                      <TouchableOpacity 
-                        style={styles.deleteButton}
-                        onPress={() => handleDeleteMeal(meal.id, meal.name)}
-                      >
-                        <IconSymbol 
-                          ios_icon_name="trash.fill" 
-                          android_material_icon_name="delete" 
-                          size={20} 
-                          color={colors.error}
-                        />
-                      </TouchableOpacity>
-                    </View>
                   </View>
-                  <View style={styles.macroRow}>
-                    <View style={styles.macroTag}>
-                      <Text style={styles.macroTagText}>P: {meal.protein}g</Text>
-                    </View>
-                    <View style={styles.macroTag}>
-                      <Text style={styles.macroTagText}>C: {meal.carbs}g</Text>
-                    </View>
-                    <View style={styles.macroTag}>
-                      <Text style={styles.macroTagText}>F: {meal.fat}g</Text>
-                    </View>
-                  </View>
+                  <TouchableOpacity 
+                    style={styles.deleteButton}
+                    onPress={() => handleDeleteMeal(meal.id, meal.name)}
+                    activeOpacity={0.7}
+                  >
+                    <IconSymbol 
+                      ios_icon_name="trash.fill" 
+                      android_material_icon_name="delete" 
+                      size={20} 
+                      color={colors.error}
+                    />
+                  </TouchableOpacity>
                 </View>
               </React.Fragment>
             ))
@@ -365,6 +370,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
     elevation: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mealContent: {
+    flex: 1,
   },
   mealHeader: {
     flexDirection: 'row',
@@ -391,17 +401,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
   },
-  mealRightContainer: {
-    alignItems: 'flex-end',
-    gap: 8,
-  },
   mealCalories: {
     fontSize: 18,
     fontWeight: '700',
     color: colors.primary,
   },
   deleteButton: {
-    padding: 4,
+    padding: 8,
+    marginLeft: 8,
   },
   macroRow: {
     flexDirection: 'row',

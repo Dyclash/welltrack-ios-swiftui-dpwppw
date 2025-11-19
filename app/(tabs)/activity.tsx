@@ -67,6 +67,7 @@ export default function ActivityScreen() {
   };
 
   const handleDeleteActivity = (id: string, name: string) => {
+    console.log('Delete activity pressed:', id, name);
     Alert.alert(
       'Delete Activity',
       `Are you sure you want to delete "${name}"?`,
@@ -75,7 +76,10 @@ export default function ActivityScreen() {
         { 
           text: 'Delete', 
           style: 'destructive',
-          onPress: () => deleteActivity(id)
+          onPress: () => {
+            console.log('Deleting activity:', id);
+            deleteActivity(id);
+          }
         },
       ]
     );
@@ -240,6 +244,7 @@ export default function ActivityScreen() {
                   <TouchableOpacity 
                     style={styles.deleteButton}
                     onPress={() => handleDeleteActivity(activity.id, activity.name)}
+                    activeOpacity={0.7}
                   >
                     <IconSymbol 
                       ios_icon_name="trash.fill" 
@@ -582,7 +587,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   deleteButton: {
-    padding: 4,
+    padding: 8,
   },
   motivationCard: {
     backgroundColor: colors.highlight,
