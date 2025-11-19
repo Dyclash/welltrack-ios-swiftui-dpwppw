@@ -64,6 +64,7 @@ interface DataContextType {
   weightGoal: WeightGoal | null;
   milestones: Milestone[];
   height: number;
+  nickname: string;
   addMeal: (meal: Omit<Meal, 'id' | 'date'>) => void;
   deleteMeal: (id: string) => void;
   addActivity: (activity: Omit<Activity, 'id' | 'date'>) => void;
@@ -74,6 +75,7 @@ interface DataContextType {
   deleteWeightEntry: (id: string) => void;
   setWeightGoal: (goal: WeightGoal) => void;
   setHeight: (height: number) => void;
+  setNickname: (nickname: string) => void;
   getCurrentWeight: () => number | null;
   getBMI: () => number | null;
   getBMICategory: () => string;
@@ -81,11 +83,13 @@ interface DataContextType {
   getTodaysMeals: () => Meal[];
   getTodaysActivities: () => Activity[];
   getTodaysSymptoms: () => Symptom[];
+  exportData: () => string;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: ReactNode }) {
+  const [nickname, setNicknameState] = useState<string>('');
   const [meals, setMeals] = useState<Meal[]>([
     { 
       id: '1', 
@@ -144,7 +148,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const [symptoms, setSymptoms] = useState<Symptom[]>([]);
 
-  const [height, setHeightState] = useState<number>(170); // in cm
+  const [height, setHeightState] = useState<number>(170);
 
   const [weightEntries, setWeightEntries] = useState<WeightEntry[]>([
     {
@@ -278,7 +282,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       return updated;
     });
 
-    // Check for milestones
     const currentWeight = newEntry.weight;
     const startWeight = weightGoal?.startWeight || currentWeight;
     const weightLost = startWeight - currentWeight;
@@ -324,6 +327,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const setHeight = (newHeight: number) => {
     setHeightState(newHeight);
     console.log('Height set:', newHeight);
+  };
+
+  const setNickname = (newNickname: string) => {
+    setNicknameState(newNickname);
+    console.log('Nickname set:', newNickname);
   };
 
   const getCurrentWeight = (): number | null => {
@@ -378,6 +386,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return symptoms.filter(symptom => symptom.date === today);
   };
 
+  const exportData = (): string => {
+    const data = {
+      exportDate: new Date().toISOString(),
+      nickname: nickname || 'User',
+      profile: {
+        height,
+        currentWeight: getCurrentWeight(),
+        bmi: getBMI(),
+        bmiCategory: getBMICategory(),
+      },
+      weightGoal,
+      weightEntries,
+      milestones,
+      meals,
+      activities,
+      symptoms,
+      summary: {
+        totalMeals: meals.length,
+        totalActivities: activities.length,
+        totalSymptoms: symptoms.length,
+        totalWeightEntries: weightEntries.length,
+        weightProgress: getWeightProgress(),
+      }
+    };
+    return JSON.stringify(data, null, 2);
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -388,6 +423,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         weightGoal,
         milestones,
         height,
+        nickname,
         addMeal,
         deleteMeal,
         addActivity,
@@ -398,6 +434,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         deleteWeightEntry,
         setWeightGoal,
         setHeight,
+        setNickname,
         getCurrentWeight,
         getBMI,
         getBMICategory,
@@ -405,6 +442,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         getTodaysMeals,
         getTodaysActivities,
         getTodaysSymptoms,
+        exportData,
       }}
     >
       {children}

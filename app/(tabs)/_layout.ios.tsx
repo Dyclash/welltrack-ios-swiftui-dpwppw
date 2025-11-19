@@ -22,9 +22,9 @@ export default function TabLayout() {
         <Icon sf="figure.walk" />
         <Label>Activity</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger key="mood" name="mood">
-        <Icon sf="face.smiling" />
-        <Label>Mood</Label>
+      <NativeTabs.Trigger key="profile" name="profile">
+        <Icon sf="person.fill" />
+        <Label>Profile</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );

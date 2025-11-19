@@ -1,37 +1,35 @@
 
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Modal, TextInput, Alert, Dimensions } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Modal, TextInput, Alert, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/IconSymbol";
 import { colors } from "@/styles/commonStyles";
 import { useData } from "@/contexts/DataContext";
 import Animated, { FadeInDown } from "react-native-reanimated";
-
-const { width } = Dimensions.get('window');
+import { BlurView } from 'expo-blur';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 
 export default function ProfileScreen() {
   const { 
-    weightEntries, 
+    nickname,
+    setNickname,
     weightGoal, 
-    milestones, 
     height,
-    addWeightEntry, 
-    deleteWeightEntry,
     setWeightGoal,
     setHeight,
     getCurrentWeight,
     getBMI,
     getBMICategory,
-    getWeightProgress
+    getWeightProgress,
+    exportData,
   } = useData();
 
-  const [showAddWeightModal, setShowAddWeightModal] = useState(false);
+  const [showNicknameModal, setShowNicknameModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showHeightModal, setShowHeightModal] = useState(false);
-  const [newWeight, setNewWeight] = useState('');
-  const [weightNote, setWeightNote] = useState('');
+  const [tempNickname, setTempNickname] = useState(nickname);
   const [targetWeight, setTargetWeight] = useState('');
-  const [targetDate, setTargetDate] = useState('');
   const [newHeight, setNewHeight] = useState(height.toString());
 
   const currentWeight = getCurrentWeight();
@@ -39,36 +37,10 @@ export default function ProfileScreen() {
   const bmiCategory = getBMICategory();
   const progress = getWeightProgress();
 
-  const handleAddWeight = () => {
-    if (!newWeight || isNaN(Number(newWeight))) {
-      Alert.alert('Error', 'Please enter a valid weight');
-      return;
-    }
-
-    addWeightEntry({
-      weight: Number(newWeight),
-      note: weightNote.trim() || undefined,
-    });
-
-    setNewWeight('');
-    setWeightNote('');
-    setShowAddWeightModal(false);
-    Alert.alert('Success', 'Weight logged successfully!');
-  };
-
-  const handleDeleteWeight = (id: string) => {
-    Alert.alert(
-      'Delete Weight Entry',
-      'Are you sure you want to delete this entry?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: () => deleteWeightEntry(id)
-        },
-      ]
-    );
+  const handleSaveNickname = () => {
+    setNickname(tempNickname.trim());
+    setShowNicknameModal(false);
+    Alert.alert('Success', 'Nickname updated successfully!');
   };
 
   const handleSetGoal = () => {
@@ -78,7 +50,7 @@ export default function ProfileScreen() {
     }
 
     const now = new Date();
-    const target = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days from now
+    const target = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
 
     setWeightGoal({
       targetWeight: Number(targetWeight),
@@ -103,6 +75,40 @@ export default function ProfileScreen() {
     Alert.alert('Success', 'Height updated successfully!');
   };
 
+  const handleExportData = async () => {
+    try {
+      const jsonData = exportData();
+      const fileName = `balance_day_export_${new Date().toISOString().split('T')[0]}.json`;
+      
+      if (Platform.OS === 'web') {
+        const blob = new Blob([jsonData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        link.click();
+        URL.revokeObjectURL(url);
+        Alert.alert('Success', 'Data exported successfully!');
+      } else {
+        const fileUri = FileSystem.documentDirectory + fileName;
+        await FileSystem.writeAsStringAsync(fileUri, jsonData);
+        
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          await Sharing.shareAsync(fileUri);
+        } else {
+          await Share.share({
+            message: jsonData,
+            title: 'Balance Day Export',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      Alert.alert('Error', 'Failed to export data. Please try again.');
+    }
+  };
+
   const getBMIColor = () => {
     if (!bmi) return colors.textSecondary;
     if (bmi < 18.5) return colors.accent;
@@ -110,18 +116,6 @@ export default function ProfileScreen() {
     if (bmi < 30) return colors.warning;
     return colors.error;
   };
-
-  const getChartData = () => {
-    const sorted = [...weightEntries].sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-    return sorted.slice(-10); // Last 10 entries
-  };
-
-  const chartData = getChartData();
-  const maxWeight = Math.max(...chartData.map(e => e.weight), weightGoal?.targetWeight || 0);
-  const minWeight = Math.min(...chartData.map(e => e.weight), weightGoal?.targetWeight || 100);
-  const weightRange = maxWeight - minWeight || 10;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -133,57 +127,116 @@ export default function ProfileScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
         <Animated.View entering={FadeInDown.delay(100)} style={styles.header}>
-          <Text style={styles.title}>Weight Tracker</Text>
-          <Text style={styles.subtitle}>Monitor your progress</Text>
+          <Text style={styles.title}>Balance Day</Text>
+          <Text style={styles.subtitle}>Your wellness profile</Text>
         </Animated.View>
 
-        {/* Current Stats */}
-        <Animated.View entering={FadeInDown.delay(200)} style={styles.statsCard}>
-          <View style={styles.statRow}>
-            <View style={styles.statItem}>
+        <Animated.View entering={FadeInDown.delay(200)} style={styles.glassCard}>
+          <View style={styles.profileHeader}>
+            <View style={styles.avatarContainer}>
+              <View style={styles.avatar}>
+                <IconSymbol 
+                  ios_icon_name="person.fill" 
+                  android_material_icon_name="person" 
+                  size={40} 
+                  color={colors.primary}
+                />
+              </View>
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.nicknameText}>
+                {nickname || 'Set your nickname'}
+              </Text>
+              <TouchableOpacity onPress={() => setShowNicknameModal(true)}>
+                <Text style={styles.editLink}>Edit Profile</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(250)} style={styles.glassCard}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Current Stats</Text>
+          </View>
+          <View style={styles.statsGrid}>
+            <View style={styles.statBox}>
               <IconSymbol 
                 ios_icon_name="scalemass.fill" 
                 android_material_icon_name="monitor-weight" 
-                size={32} 
+                size={28} 
                 color={colors.primary}
               />
               <Text style={styles.statValue}>{currentWeight?.toFixed(1) || 'N/A'}</Text>
-              <Text style={styles.statLabel}>Current Weight (kg)</Text>
+              <Text style={styles.statLabel}>Weight (kg)</Text>
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
+            <View style={styles.statBox}>
               <IconSymbol 
-                ios_icon_name="target" 
-                android_material_icon_name="flag" 
-                size={32} 
+                ios_icon_name="arrow.up.arrow.down" 
+                android_material_icon_name="height" 
+                size={28} 
                 color={colors.accent}
               />
-              <Text style={styles.statValue}>{weightGoal?.targetWeight.toFixed(1) || 'N/A'}</Text>
-              <Text style={styles.statLabel}>Target Weight (kg)</Text>
+              <Text style={styles.statValue}>{height}</Text>
+              <Text style={styles.statLabel}>Height (cm)</Text>
+            </View>
+            <View style={styles.statBox}>
+              <IconSymbol 
+                ios_icon_name="heart.fill" 
+                android_material_icon_name="favorite" 
+                size={28} 
+                color={colors.secondary}
+              />
+              <Text style={[styles.statValue, { color: getBMIColor() }]}>
+                {bmi?.toFixed(1) || 'N/A'}
+              </Text>
+              <Text style={styles.statLabel}>BMI</Text>
             </View>
           </View>
         </Animated.View>
 
-        {/* BMI Card */}
-        <Animated.View entering={FadeInDown.delay(250)} style={styles.bmiCard}>
-          <View style={styles.bmiHeader}>
-            <Text style={styles.cardTitle}>Body Mass Index (BMI)</Text>
-            <TouchableOpacity onPress={() => setShowHeightModal(true)}>
-              <Text style={styles.editText}>Edit Height</Text>
+        <Animated.View entering={FadeInDown.delay(300)} style={styles.glassCard}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Weight Goal</Text>
+            <TouchableOpacity onPress={() => setShowGoalModal(true)}>
+              <Text style={styles.editLink}>Edit</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.bmiContent}>
-            <View style={styles.bmiValueContainer}>
-              <Text style={[styles.bmiValue, { color: getBMIColor() }]}>
-                {bmi?.toFixed(1) || 'N/A'}
-              </Text>
-              <View style={[styles.bmiCategoryBadge, { backgroundColor: getBMIColor() }]}>
-                <Text style={styles.bmiCategoryText}>{bmiCategory}</Text>
+          {weightGoal ? (
+            <>
+              <View style={styles.goalInfo}>
+                <View style={styles.goalRow}>
+                  <Text style={styles.goalLabel}>Target Weight</Text>
+                  <Text style={styles.goalValue}>{weightGoal.targetWeight.toFixed(1)} kg</Text>
+                </View>
+                <View style={styles.goalRow}>
+                  <Text style={styles.goalLabel}>Progress</Text>
+                  <Text style={styles.goalValue}>{progress.toFixed(0)}%</Text>
+                </View>
               </View>
+              <View style={styles.progressBarContainer}>
+                <View style={[styles.progressBar, { width: `${Math.min(progress, 100)}%` }]} />
+              </View>
+              <Text style={styles.progressSubtext}>
+                {((currentWeight || weightGoal.startWeight) - weightGoal.targetWeight).toFixed(1)} kg to go
+              </Text>
+            </>
+          ) : (
+            <Text style={styles.noGoalText}>No weight goal set</Text>
+          )}
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(350)} style={styles.glassCard}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>BMI Category</Text>
+            <TouchableOpacity onPress={() => setShowHeightModal(true)}>
+              <Text style={styles.editLink}>Update Height</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.bmiContainer}>
+            <View style={[styles.bmiCategoryBadge, { backgroundColor: getBMIColor() }]}>
+              <Text style={styles.bmiCategoryText}>{bmiCategory}</Text>
             </View>
-            <Text style={styles.heightText}>Height: {height} cm</Text>
           </View>
           <View style={styles.bmiScale}>
             <View style={styles.bmiScaleItem}>
@@ -205,248 +258,36 @@ export default function ProfileScreen() {
           </View>
         </Animated.View>
 
-        {/* Progress Card */}
-        {weightGoal && (
-          <Animated.View entering={FadeInDown.delay(300)} style={styles.progressCard}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.cardTitle}>Goal Progress</Text>
-              <TouchableOpacity onPress={() => setShowGoalModal(true)}>
-                <Text style={styles.editText}>Edit Goal</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.progressBarContainer}>
-              <View style={[styles.progressBar, { width: `${Math.min(progress, 100)}%` }]} />
-            </View>
-            <View style={styles.progressStats}>
-              <Text style={styles.progressText}>{progress.toFixed(0)}% Complete</Text>
-              <Text style={styles.progressText}>
-                {(weightGoal.startWeight - (currentWeight || weightGoal.startWeight)).toFixed(1)} kg lost
-              </Text>
-            </View>
-            <Text style={styles.progressSubtext}>
-              {((currentWeight || weightGoal.startWeight) - weightGoal.targetWeight).toFixed(1)} kg to go
-            </Text>
-          </Animated.View>
-        )}
-
-        {/* Weight Chart */}
-        <Animated.View entering={FadeInDown.delay(350)} style={styles.chartCard}>
-          <Text style={styles.cardTitle}>Weight Trend</Text>
-          <View style={styles.chart}>
-            {chartData.length > 0 ? (
-              <>
-                {/* Y-axis labels */}
-                <View style={styles.yAxis}>
-                  <Text style={styles.yAxisLabel}>{maxWeight.toFixed(0)}</Text>
-                  <Text style={styles.yAxisLabel}>{((maxWeight + minWeight) / 2).toFixed(0)}</Text>
-                  <Text style={styles.yAxisLabel}>{minWeight.toFixed(0)}</Text>
-                </View>
-                
-                {/* Chart area */}
-                <View style={styles.chartArea}>
-                  {/* Goal line */}
-                  {weightGoal && (
-                    <View 
-                      style={[
-                        styles.goalLine,
-                        { 
-                          bottom: `${((weightGoal.targetWeight - minWeight) / weightRange) * 100}%` 
-                        }
-                      ]}
-                    >
-                      <View style={styles.goalLineDash} />
-                      <Text style={styles.goalLineText}>Goal</Text>
-                    </View>
-                  )}
-                  
-                  {/* Data points */}
-                  <View style={styles.dataPoints}>
-                    {chartData.map((entry, index) => {
-                      const heightPercent = ((entry.weight - minWeight) / weightRange) * 100;
-                      const leftPercent = (index / (chartData.length - 1)) * 100;
-                      
-                      return (
-                        <React.Fragment key={index}>
-                          <View
-                            style={[
-                              styles.dataPoint,
-                              {
-                                bottom: `${heightPercent}%`,
-                                left: `${leftPercent}%`,
-                              }
-                            ]}
-                          >
-                            <View style={styles.dataPointDot} />
-                          </View>
-                          {index < chartData.length - 1 && (
-                            <View
-                              style={[
-                                styles.dataLine,
-                                {
-                                  bottom: `${heightPercent}%`,
-                                  left: `${leftPercent}%`,
-                                  width: `${100 / (chartData.length - 1)}%`,
-                                  transform: [
-                                    {
-                                      rotate: `${Math.atan2(
-                                        ((chartData[index + 1].weight - minWeight) / weightRange - (entry.weight - minWeight) / weightRange) * 150,
-                                        (width - 120) / (chartData.length - 1)
-                                      )}rad`
-                                    }
-                                  ]
-                                }
-                              ]}
-                            />
-                          )}
-                        </React.Fragment>
-                      );
-                    })}
-                  </View>
-                </View>
-              </>
-            ) : (
-              <View style={styles.emptyChart}>
-                <Text style={styles.emptyChartText}>No weight data yet</Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.xAxis}>
-            {chartData.slice(0, 5).map((entry, index) => (
-              <React.Fragment key={index}>
-                <Text style={styles.xAxisLabel}>
-                  {new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </Text>
-              </React.Fragment>
-            ))}
-          </View>
+        <Animated.View entering={FadeInDown.delay(400)}>
+          <TouchableOpacity style={styles.exportButton} onPress={handleExportData}>
+            <IconSymbol 
+              ios_icon_name="square.and.arrow.up.fill" 
+              android_material_icon_name="share" 
+              size={24} 
+              color={colors.text}
+            />
+            <Text style={styles.exportButtonText}>Export All Data</Text>
+          </TouchableOpacity>
         </Animated.View>
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <Animated.View entering={FadeInDown.delay(400)} style={styles.actionButtonWrapper}>
-            <TouchableOpacity style={styles.primaryButton} onPress={() => setShowAddWeightModal(true)}>
-              <IconSymbol 
-                ios_icon_name="plus.circle.fill" 
-                android_material_icon_name="add-circle" 
-                size={24} 
-                color={colors.card}
-              />
-              <Text style={styles.primaryButtonText}>Log Weight</Text>
-            </TouchableOpacity>
-          </Animated.View>
-
-          <Animated.View entering={FadeInDown.delay(450)} style={styles.actionButtonWrapper}>
-            <TouchableOpacity style={styles.secondaryButton} onPress={() => setShowGoalModal(true)}>
-              <IconSymbol 
-                ios_icon_name="target" 
-                android_material_icon_name="flag" 
-                size={24} 
-                color={colors.primary}
-              />
-              <Text style={styles.secondaryButtonText}>Set Goal</Text>
-            </TouchableOpacity>
-          </Animated.View>
+        <View style={styles.infoCard}>
+          <Text style={styles.infoText}>
+            Export your data to analyze your progress, share with healthcare providers, or keep a backup.
+          </Text>
         </View>
-
-        {/* Milestones */}
-        {milestones.length > 0 && (
-          <Animated.View entering={FadeInDown.delay(500)} style={styles.milestonesSection}>
-            <Text style={styles.sectionTitle}>Milestones 🎉</Text>
-            {milestones.slice().reverse().map((milestone, index) => (
-              <React.Fragment key={index}>
-                <View style={styles.milestoneCard}>
-                  <View style={styles.milestoneIcon}>
-                    <IconSymbol 
-                      ios_icon_name="star.fill" 
-                      android_material_icon_name="star" 
-                      size={24} 
-                      color={colors.accent}
-                    />
-                  </View>
-                  <View style={styles.milestoneInfo}>
-                    <Text style={styles.milestoneMessage}>{milestone.message}</Text>
-                    <Text style={styles.milestoneDate}>
-                      {new Date(milestone.date).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
-                    </Text>
-                  </View>
-                  <Text style={styles.milestoneWeight}>{milestone.weight.toFixed(1)} kg</Text>
-                </View>
-              </React.Fragment>
-            ))}
-          </Animated.View>
-        )}
-
-        {/* Weight History */}
-        <Animated.View entering={FadeInDown.delay(550)} style={styles.historySection}>
-          <Text style={styles.sectionTitle}>Weight History</Text>
-          {weightEntries.length === 0 ? (
-            <View style={styles.emptyState}>
-              <IconSymbol 
-                ios_icon_name="scalemass" 
-                android_material_icon_name="monitor-weight" 
-                size={48} 
-                color={colors.textSecondary}
-              />
-              <Text style={styles.emptyText}>No weight entries yet</Text>
-              <Text style={styles.emptySubtext}>Tap &quot;Log Weight&quot; to add your first entry</Text>
-            </View>
-          ) : (
-            [...weightEntries].reverse().map((entry, index) => (
-              <React.Fragment key={index}>
-                <View style={styles.historyCard}>
-                  <View style={styles.historyIcon}>
-                    <IconSymbol 
-                      ios_icon_name="scalemass.fill" 
-                      android_material_icon_name="monitor-weight" 
-                      size={24} 
-                      color={colors.primary}
-                    />
-                  </View>
-                  <View style={styles.historyInfo}>
-                    <Text style={styles.historyWeight}>{entry.weight.toFixed(1)} kg</Text>
-                    <Text style={styles.historyDate}>
-                      {new Date(entry.date).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric',
-                        year: 'numeric'
-                      })} • {entry.time}
-                    </Text>
-                    {entry.note && <Text style={styles.historyNote}>{entry.note}</Text>}
-                  </View>
-                  <TouchableOpacity 
-                    style={styles.deleteButton}
-                    onPress={() => handleDeleteWeight(entry.id)}
-                  >
-                    <IconSymbol 
-                      ios_icon_name="trash.fill" 
-                      android_material_icon_name="delete" 
-                      size={20} 
-                      color={colors.error}
-                    />
-                  </TouchableOpacity>
-                </View>
-              </React.Fragment>
-            ))
-          )}
-        </Animated.View>
       </ScrollView>
 
-      {/* Add Weight Modal */}
       <Modal
-        visible={showAddWeightModal}
+        visible={showNicknameModal}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowAddWeightModal(false)}
+        onRequestClose={() => setShowNicknameModal(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Log Weight</Text>
-              <TouchableOpacity onPress={() => setShowAddWeightModal(false)}>
+              <Text style={styles.modalTitle}>Edit Profile</Text>
+              <TouchableOpacity onPress={() => setShowNicknameModal(false)}>
                 <IconSymbol 
                   ios_icon_name="xmark.circle.fill" 
                   android_material_icon_name="cancel" 
@@ -457,39 +298,23 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Weight (kg) *</Text>
+              <Text style={styles.inputLabel}>Nickname</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g., 75.5"
+                placeholder="Enter your nickname"
                 placeholderTextColor={colors.textSecondary}
-                value={newWeight}
-                onChangeText={setNewWeight}
-                keyboardType="decimal-pad"
+                value={tempNickname}
+                onChangeText={setTempNickname}
               />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Note (Optional)</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Add a note..."
-                placeholderTextColor={colors.textSecondary}
-                value={weightNote}
-                onChangeText={setWeightNote}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-            </View>
-
-            <TouchableOpacity style={styles.submitButton} onPress={handleAddWeight}>
-              <Text style={styles.submitButtonText}>Save Weight</Text>
+            <TouchableOpacity style={styles.submitButton} onPress={handleSaveNickname}>
+              <Text style={styles.submitButtonText}>Save</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* Set Goal Modal */}
       <Modal
         visible={showGoalModal}
         animationType="slide"
@@ -522,7 +347,7 @@ export default function ProfileScreen() {
               />
             </View>
 
-            <View style={styles.goalInfo}>
+            <View style={styles.goalInfoBox}>
               <Text style={styles.goalInfoText}>
                 Current Weight: {currentWeight?.toFixed(1) || 'N/A'} kg
               </Text>
@@ -538,7 +363,6 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* Set Height Modal */}
       <Modal
         visible={showHeightModal}
         animationType="slide"
@@ -599,61 +423,62 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 24,
+    alignItems: 'center',
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
+    fontSize: 36,
+    fontWeight: '800',
     color: colors.text,
     marginBottom: 4,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
     color: colors.textSecondary,
     fontWeight: '500',
   },
-  statsCard: {
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    padding: 24,
+  glassCard: {
+    backgroundColor: colors.glass,
+    borderColor: colors.glassBorder,
+    borderWidth: 1,
+    borderRadius: 24,
+    padding: 20,
     marginBottom: 16,
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)',
-    elevation: 3,
+    boxShadow: '0px 8px 32px rgba(0, 0, 0, 0.3)',
+    elevation: 5,
   },
-  statRow: {
+  profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  statItem: {
-    flex: 1,
+  avatarContainer: {
+    marginRight: 16,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.highlight,
+    justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.primary,
   },
-  statDivider: {
-    width: 1,
-    height: 60,
-    backgroundColor: colors.border,
+  profileInfo: {
+    flex: 1,
   },
-  statValue: {
-    fontSize: 32,
-    fontWeight: '800',
+  nicknameText: {
+    fontSize: 24,
+    fontWeight: '700',
     color: colors.text,
-    marginTop: 8,
+    marginBottom: 4,
   },
-  statLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 4,
+  editLink: {
+    fontSize: 14,
+    color: colors.primary,
     fontWeight: '600',
-    textAlign: 'center',
   },
-  bmiCard: {
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 16,
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)',
-    elevation: 3,
-  },
-  bmiHeader: {
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -664,39 +489,83 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
   },
-  editText: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '600',
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-  bmiContent: {
+  statBox: {
+    flex: 1,
     alignItems: 'center',
+    paddingVertical: 12,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: colors.text,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  goalInfo: {
     marginBottom: 16,
   },
-  bmiValueContainer: {
+  goalRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
     marginBottom: 8,
   },
-  bmiValue: {
-    fontSize: 48,
-    fontWeight: '800',
-  },
-  bmiCategoryBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  bmiCategoryText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.card,
-  },
-  heightText: {
+  goalLabel: {
     fontSize: 14,
     color: colors.textSecondary,
     fontWeight: '500',
+  },
+  goalValue: {
+    fontSize: 14,
+    color: colors.text,
+    fontWeight: '700',
+  },
+  progressBarContainer: {
+    height: 12,
+    backgroundColor: colors.backgroundLight,
+    borderRadius: 6,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: colors.success,
+    borderRadius: 6,
+  },
+  progressSubtext: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  noGoalText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+  bmiContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  bmiCategoryBadge: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 16,
+  },
+  bmiCategoryText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
   },
   bmiScale: {
     flexDirection: 'row',
@@ -707,7 +576,7 @@ const styles = StyleSheet.create({
   },
   bmiScaleItem: {
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   bmiScaleDot: {
     width: 12,
@@ -719,311 +588,53 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontWeight: '600',
   },
-  progressCard: {
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 16,
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)',
-    elevation: 3,
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  progressBarContainer: {
-    height: 12,
-    backgroundColor: colors.background,
-    borderRadius: 6,
-    overflow: 'hidden',
-    marginBottom: 12,
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: colors.success,
-    borderRadius: 6,
-  },
-  progressStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  progressText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  progressSubtext: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  chartCard: {
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 16,
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)',
-    elevation: 3,
-  },
-  chart: {
-    height: 200,
-    marginTop: 16,
-    flexDirection: 'row',
-  },
-  yAxis: {
-    width: 40,
-    justifyContent: 'space-between',
-    paddingRight: 8,
-  },
-  yAxisLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  chartArea: {
-    flex: 1,
-    position: 'relative',
-    backgroundColor: colors.background,
-    borderRadius: 8,
-  },
-  goalLine: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: colors.accent,
-    borderStyle: 'dashed',
+  exportButton: {
+    backgroundColor: colors.glass,
+    borderColor: colors.glassBorder,
     borderWidth: 1,
-    borderColor: colors.accent,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  goalLineDash: {
-    flex: 1,
-  },
-  goalLineText: {
-    fontSize: 10,
-    color: colors.accent,
-    fontWeight: '600',
-    backgroundColor: colors.background,
-    paddingHorizontal: 4,
-  },
-  dataPoints: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  dataPoint: {
-    position: 'absolute',
-    width: 12,
-    height: 12,
-    marginLeft: -6,
-    marginBottom: -6,
-  },
-  dataPointDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.primary,
-    borderWidth: 2,
-    borderColor: colors.card,
-  },
-  dataLine: {
-    position: 'absolute',
-    height: 2,
-    backgroundColor: colors.primary,
-    transformOrigin: 'left center',
-  },
-  emptyChart: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyChartText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  xAxis: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    paddingLeft: 40,
-  },
-  xAxisLabel: {
-    fontSize: 10,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-  },
-  actionButtonWrapper: {
-    flex: 1,
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
     borderRadius: 16,
     padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    boxShadow: '0px 4px 12px rgba(41, 128, 185, 0.3)',
+    marginBottom: 16,
+    boxShadow: '0px 4px 16px rgba(102, 126, 234, 0.3)',
     elevation: 4,
   },
-  primaryButtonText: {
-    color: colors.card,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  secondaryButton: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
-  },
-  secondaryButtonText: {
-    color: colors.primary,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  milestonesSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+  exportButtonText: {
     color: colors.text,
-    marginBottom: 16,
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 8,
   },
-  milestoneCard: {
-    backgroundColor: colors.card,
+  infoCard: {
+    backgroundColor: colors.glass,
+    borderColor: colors.glassBorder,
+    borderWidth: 1,
     borderRadius: 16,
     padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
-  },
-  milestoneIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.highlight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  milestoneInfo: {
-    flex: 1,
-  },
-  milestoneMessage: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 2,
-  },
-  milestoneDate: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  milestoneWeight: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.accent,
-  },
-  historySection: {
     marginBottom: 24,
   },
-  historyCard: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
-  },
-  historyIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  historyInfo: {
-    flex: 1,
-  },
-  historyWeight: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 2,
-  },
-  historyDate: {
-    fontSize: 12,
+  infoText: {
+    fontSize: 13,
     color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  historyNote: {
-    fontSize: 14,
-    color: colors.text,
-    fontStyle: 'italic',
-  },
-  deleteButton: {
-    padding: 8,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 48,
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    marginTop: 16,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 8,
+    lineHeight: 20,
     textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.backgroundLight,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 24,
     paddingHorizontal: 20,
     paddingBottom: 40,
+    borderTopWidth: 1,
+    borderTopColor: colors.glassBorder,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1046,16 +657,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.glass,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
     color: colors.text,
     borderWidth: 1,
-    borderColor: colors.border,
-  },
-  textArea: {
-    minHeight: 80,
+    borderColor: colors.glassBorder,
   },
   submitButton: {
     backgroundColor: colors.primary,
@@ -1063,20 +671,22 @@ const styles = StyleSheet.create({
     padding: 18,
     alignItems: 'center',
     marginTop: 8,
-    boxShadow: '0px 4px 12px rgba(41, 128, 185, 0.3)',
+    boxShadow: '0px 4px 12px rgba(102, 126, 234, 0.4)',
     elevation: 4,
   },
   submitButtonText: {
-    color: colors.card,
+    color: colors.text,
     fontSize: 18,
     fontWeight: '700',
   },
-  goalInfo: {
-    backgroundColor: colors.background,
+  goalInfoBox: {
+    backgroundColor: colors.glass,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
     gap: 8,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
   },
   goalInfoText: {
     fontSize: 14,
