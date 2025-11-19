@@ -5,18 +5,20 @@ import { colors } from "@/styles/commonStyles";
 import { IconSymbol } from "@/components/IconSymbol";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useData } from "@/contexts/DataContext";
+import { usePedometer } from "@/hooks/usePedometer";
 
 const activityTypes = [
-  { name: 'Running', icon: 'figure.run', androidIcon: 'directions-run' },
-  { name: 'Walking', icon: 'figure.walk', androidIcon: 'directions-walk' },
-  { name: 'Cycling', icon: 'bicycle', androidIcon: 'directions-bike' },
-  { name: 'Swimming', icon: 'figure.pool.swim', androidIcon: 'pool' },
-  { name: 'Yoga', icon: 'figure.yoga', androidIcon: 'self-improvement' },
-  { name: 'Gym', icon: 'dumbbell.fill', androidIcon: 'fitness-center' },
+  { name: 'Running', icon: 'figure.run', androidIcon: 'directions-run', defaultDuration: 30, defaultCalories: 300 },
+  { name: 'Walking', icon: 'figure.walk', androidIcon: 'directions-walk', defaultDuration: 45, defaultCalories: 150 },
+  { name: 'Cycling', icon: 'bicycle', androidIcon: 'directions-bike', defaultDuration: 40, defaultCalories: 280 },
+  { name: 'Swimming', icon: 'figure.pool.swim', androidIcon: 'pool', defaultDuration: 30, defaultCalories: 250 },
+  { name: 'Yoga', icon: 'figure.yoga', androidIcon: 'self-improvement', defaultDuration: 45, defaultCalories: 180 },
+  { name: 'Gym', icon: 'dumbbell.fill', androidIcon: 'fitness-center', defaultDuration: 60, defaultCalories: 350 },
 ];
 
 export default function ActivityScreen() {
   const { getTodaysActivities, addActivity, deleteActivity } = useData();
+  const { currentStepCount, isPedometerAvailable } = usePedometer();
   const activities = getTodaysActivities();
   
   const [showAddModal, setShowAddModal] = useState(false);
@@ -28,8 +30,7 @@ export default function ActivityScreen() {
   const totalDuration = activities.reduce((sum, activity) => sum + activity.duration, 0);
   const totalCalories = activities.reduce((sum, activity) => sum + activity.calories, 0);
   const stepsGoal = 10000;
-  const currentSteps = 7234;
-  const stepsPercentage = (currentSteps / stepsGoal) * 100;
+  const stepsPercentage = (currentStepCount / stepsGoal) * 100;
 
   const handleAddActivity = () => {
     if (!activityName.trim()) {
@@ -81,9 +82,19 @@ export default function ActivityScreen() {
   };
 
   const handleQuickAdd = (type: typeof activityTypes[0]) => {
-    setSelectedType(type);
-    setActivityName(type.name);
-    setShowAddModal(true);
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+    addActivity({
+      name: type.name,
+      duration: type.defaultDuration,
+      calories: type.defaultCalories,
+      time: timeString,
+      icon: type.icon,
+      androidIcon: type.androidIcon,
+    });
+
+    Alert.alert('Success', `${type.name} activity added!`);
   };
 
   return (
@@ -109,7 +120,9 @@ export default function ActivityScreen() {
               color={colors.accent}
             />
             <View style={styles.stepsInfo}>
-              <Text style={styles.stepsCount}>{currentSteps.toLocaleString()}</Text>
+              <Text style={styles.stepsCount}>
+                {isPedometerAvailable ? currentStepCount.toLocaleString() : 'N/A'}
+              </Text>
               <Text style={styles.stepsGoal}>/ {stepsGoal.toLocaleString()} steps</Text>
             </View>
           </View>
@@ -117,9 +130,13 @@ export default function ActivityScreen() {
             <View style={[styles.progressBar, { width: `${Math.min(stepsPercentage, 100)}%` }]} />
           </View>
           <Text style={styles.remainingText}>
-            {stepsGoal - currentSteps > 0 
-              ? `${(stepsGoal - currentSteps).toLocaleString()} steps to go!`
-              : 'Goal reached! 🎉'}
+            {isPedometerAvailable ? (
+              stepsGoal - currentStepCount > 0 
+                ? `${(stepsGoal - currentStepCount).toLocaleString()} steps to go!`
+                : 'Goal reached! 🎉'
+            ) : (
+              'Pedometer not available on this device'
+            )}
           </Text>
         </Animated.View>
 
@@ -161,6 +178,31 @@ export default function ActivityScreen() {
           </TouchableOpacity>
         </Animated.View>
 
+        {/* Quick Activities */}
+        <Animated.View entering={FadeInDown.delay(450)} style={styles.quickActivities}>
+          <Text style={styles.sectionTitle}>Quick Log</Text>
+          <Text style={styles.quickSubtitle}>Tap to instantly log an activity</Text>
+          <View style={styles.quickGrid}>
+            {activityTypes.slice(0, 3).map((type, index) => (
+              <React.Fragment key={index}>
+                <TouchableOpacity 
+                  style={styles.quickCard}
+                  onPress={() => handleQuickAdd(type)}
+                >
+                  <IconSymbol 
+                    ios_icon_name={type.icon} 
+                    android_material_icon_name={type.androidIcon} 
+                    size={32} 
+                    color={index === 0 ? colors.secondary : index === 1 ? colors.accent : colors.primary}
+                  />
+                  <Text style={styles.quickText}>{type.name}</Text>
+                  <Text style={styles.quickDetails}>{type.defaultDuration} min</Text>
+                </TouchableOpacity>
+              </React.Fragment>
+            ))}
+          </View>
+        </Animated.View>
+
         {/* Activities List */}
         <Animated.View entering={FadeInDown.delay(500)} style={styles.activitiesSection}>
           <Text style={styles.sectionTitle}>Today&apos;s Activities</Text>
@@ -173,7 +215,7 @@ export default function ActivityScreen() {
                 color={colors.textSecondary}
               />
               <Text style={styles.emptyText}>No activities logged yet</Text>
-              <Text style={styles.emptySubtext}>Tap the button above to add your first activity</Text>
+              <Text style={styles.emptySubtext}>Use Quick Log or tap the button above to add your first activity</Text>
             </View>
           ) : (
             activities.map((activity, index) => (
@@ -212,31 +254,8 @@ export default function ActivityScreen() {
           )}
         </Animated.View>
 
-        {/* Quick Activities */}
-        <Animated.View entering={FadeInDown.delay(600)} style={styles.quickActivities}>
-          <Text style={styles.sectionTitle}>Quick Log</Text>
-          <View style={styles.quickGrid}>
-            {activityTypes.slice(0, 3).map((type, index) => (
-              <React.Fragment key={index}>
-                <TouchableOpacity 
-                  style={styles.quickCard}
-                  onPress={() => handleQuickAdd(type)}
-                >
-                  <IconSymbol 
-                    ios_icon_name={type.icon} 
-                    android_material_icon_name={type.androidIcon} 
-                    size={32} 
-                    color={index === 0 ? colors.secondary : index === 1 ? colors.accent : colors.primary}
-                  />
-                  <Text style={styles.quickText}>{type.name}</Text>
-                </TouchableOpacity>
-              </React.Fragment>
-            ))}
-          </View>
-        </Animated.View>
-
         {/* Motivation Card */}
-        <Animated.View entering={FadeInDown.delay(700)} style={styles.motivationCard}>
+        <Animated.View entering={FadeInDown.delay(600)} style={styles.motivationCard}>
           <View style={styles.motivationHeader}>
             <IconSymbol 
               ios_icon_name="star.fill" 
@@ -247,7 +266,9 @@ export default function ActivityScreen() {
             <Text style={styles.motivationTitle}>Keep Moving!</Text>
           </View>
           <Text style={styles.motivationText}>
-            You&apos;re 72% towards your daily step goal. A short walk after dinner will help you reach it!
+            {isPedometerAvailable && currentStepCount > 0 
+              ? `You're ${Math.round(stepsPercentage)}% towards your daily step goal. ${stepsPercentage < 100 ? 'A short walk after dinner will help you reach it!' : 'Amazing work! 🎉'}`
+              : 'Stay active and log your workouts to track your progress!'}
           </Text>
         </Animated.View>
       </ScrollView>
@@ -287,6 +308,8 @@ export default function ActivityScreen() {
                         onPress={() => {
                           setSelectedType(type);
                           setActivityName(type.name);
+                          setDuration(type.defaultDuration.toString());
+                          setCalories(type.defaultCalories.toString());
                         }}
                       >
                         <IconSymbol 
@@ -468,14 +491,48 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginLeft: 8,
   },
-  activitiesSection: {
+  quickActivities: {
     marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: colors.text,
+    marginBottom: 8,
+  },
+  quickSubtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
     marginBottom: 16,
+    fontWeight: '500',
+  },
+  quickGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  quickCard: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
+  },
+  quickText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: 8,
+  },
+  quickDetails: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  activitiesSection: {
+    marginBottom: 24,
   },
   activityCard: {
     backgroundColor: colors.card,
@@ -527,28 +584,6 @@ const styles = StyleSheet.create({
   deleteButton: {
     padding: 4,
   },
-  quickActivities: {
-    marginBottom: 24,
-  },
-  quickGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  quickCard: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
-  },
-  quickText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginTop: 8,
-  },
   motivationCard: {
     backgroundColor: colors.highlight,
     borderRadius: 16,
@@ -586,6 +621,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
+    paddingHorizontal: 20,
   },
   modalOverlay: {
     flex: 1,

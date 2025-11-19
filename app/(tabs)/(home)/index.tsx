@@ -5,6 +5,7 @@ import { colors } from "@/styles/commonStyles";
 import { IconSymbol } from "@/components/IconSymbol";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useData } from "@/contexts/DataContext";
+import { usePedometer } from "@/hooks/usePedometer";
 
 const { width } = Dimensions.get('window');
 
@@ -17,6 +18,7 @@ interface DailyStats {
 
 export default function HomeScreen() {
   const { getTodaysMeals, getTodaysActivities } = useData();
+  const { currentStepCount, isPedometerAvailable } = usePedometer();
   const todaysMeals = getTodaysMeals();
   const todaysActivities = getTodaysActivities();
 
@@ -26,13 +28,14 @@ export default function HomeScreen() {
   const [dailyStats] = React.useState<DailyStats>({
     calories: { current: totalCalories, goal: calorieGoal },
     water: { current: 6, goal: 8 },
-    steps: { current: 7234, goal: 10000 },
+    steps: { current: currentStepCount, goal: 10000 },
     weight: 165.5,
   });
 
   const caloriePercentage = (totalCalories / calorieGoal) * 100;
   const waterPercentage = (dailyStats.water.current / dailyStats.water.goal) * 100;
-  const stepsPercentage = (dailyStats.steps.current / dailyStats.steps.goal) * 100;
+  const stepsGoal = 10000;
+  const stepsPercentage = (currentStepCount / stepsGoal) * 100;
 
   return (
     <View style={styles.container}>
@@ -95,7 +98,9 @@ export default function HomeScreen() {
               size={28} 
               color={colors.accent}
             />
-            <Text style={styles.statValue}>{dailyStats.steps.current.toLocaleString()}</Text>
+            <Text style={styles.statValue}>
+              {isPedometerAvailable ? currentStepCount.toLocaleString() : 'N/A'}
+            </Text>
             <Text style={styles.statLabel}>Steps</Text>
             <View style={styles.miniProgressBar}>
               <View style={[styles.miniProgress, { width: `${Math.min(stepsPercentage, 100)}%`, backgroundColor: colors.accent }]} />
