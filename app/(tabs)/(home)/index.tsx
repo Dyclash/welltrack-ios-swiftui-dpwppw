@@ -137,8 +137,8 @@ export default function HomeScreen() {
             </View>
             
             <View style={styles.moodEntriesContainer}>
-              {todaysMoodEntries.map((entry, index) => (
-                <React.Fragment key={index}>
+              {todaysMoodEntries.map((entry) => (
+                <React.Fragment key={entry.id}>
                   <View style={styles.moodEntryCard}>
                     <View style={styles.moodEmojiContainer}>
                       <Text style={styles.moodEntryEmoji}>{entry.emoji}</Text>
@@ -155,6 +155,7 @@ export default function HomeScreen() {
                     <TouchableOpacity
                       onPress={() => handleDeleteMood(entry.id)}
                       style={styles.deleteButton}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                       <IconSymbol
                         ios_icon_name="trash.fill"
@@ -190,15 +191,15 @@ export default function HomeScreen() {
               <Text style={styles.emptyText}>No meals logged yet</Text>
             </View>
           ) : (
-            todaysMeals.slice(0, 3).map((meal, index) => (
-              <React.Fragment key={index}>
+            todaysMeals.slice(0, 3).map((meal) => (
+              <React.Fragment key={meal.id}>
                 <View style={styles.mealCard}>
                   <View style={styles.mealIcon}>
                     <IconSymbol 
                       ios_icon_name="fork.knife" 
                       android_material_icon_name="restaurant" 
                       size={24} 
-                      color={index === 0 ? colors.accent : index === 1 ? colors.primary : colors.secondary}
+                      color={colors.primary}
                     />
                   </View>
                   <View style={styles.mealInfo}>
@@ -232,8 +233,8 @@ export default function HomeScreen() {
               <Text style={styles.emptyText}>No activities logged yet</Text>
             </View>
           ) : (
-            todaysActivities.slice(0, 2).map((activity, index) => (
-              <React.Fragment key={index}>
+            todaysActivities.slice(0, 2).map((activity) => (
+              <React.Fragment key={activity.id}>
                 <View style={styles.mealCard}>
                   <View style={styles.mealIcon}>
                     <IconSymbol 

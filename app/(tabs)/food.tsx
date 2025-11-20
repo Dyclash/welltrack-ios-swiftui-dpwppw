@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity, TextInput, Modal, Alert } from "react-native";
+import { ScrollView, StyleSheet, View, Text, TouchableOpacity, TextInput, Modal, Alert, Keyboard } from "react-native";
 import { colors } from "@/styles/commonStyles";
 import { IconSymbol } from "@/components/IconSymbol";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -51,6 +51,7 @@ export default function FoodScreen() {
     setCarbs('');
     setFat('');
     setShowAddModal(false);
+    Alert.alert('Success', 'Meal added successfully!');
   };
 
   const handleDeleteMeal = (id: string, name: string) => {
@@ -136,8 +137,8 @@ export default function FoodScreen() {
               <Text style={styles.emptySubtext}>Tap the button above to add your first meal</Text>
             </View>
           ) : (
-            meals.map((meal, index) => (
-              <React.Fragment key={index}>
+            meals.map((meal) => (
+              <React.Fragment key={meal.id}>
                 <View style={styles.mealCard}>
                   <View style={styles.mealContent}>
                     <View style={styles.mealHeader}>
@@ -171,6 +172,7 @@ export default function FoodScreen() {
                     style={styles.deleteButton}
                     onPress={() => handleDeleteMeal(meal.id, meal.name)}
                     activeOpacity={0.7}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
                     <IconSymbol 
                       ios_icon_name="trash.fill" 
@@ -193,86 +195,101 @@ export default function FoodScreen() {
         transparent={true}
         onRequestClose={() => setShowAddModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Log New Meal</Text>
-              <TouchableOpacity onPress={() => setShowAddModal(false)}>
-                <IconSymbol 
-                  ios_icon_name="xmark.circle.fill" 
-                  android_material_icon_name="cancel" 
-                  size={28} 
-                  color={colors.textSecondary}
-                />
-              </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => {
+            Keyboard.dismiss();
+            setShowAddModal(false);
+          }}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Log New Meal</Text>
+                <TouchableOpacity onPress={() => setShowAddModal(false)}>
+                  <IconSymbol 
+                    ios_icon_name="xmark.circle.fill" 
+                    android_material_icon_name="cancel" 
+                    size={28} 
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Meal Name *</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g., Chicken Salad"
+                    placeholderTextColor={colors.textSecondary}
+                    value={mealName}
+                    onChangeText={setMealName}
+                    returnKeyType="next"
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Calories *</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g., 350"
+                    placeholderTextColor={colors.textSecondary}
+                    value={calories}
+                    onChangeText={setCalories}
+                    keyboardType="numeric"
+                    returnKeyType="next"
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Protein (g)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g., 25"
+                    placeholderTextColor={colors.textSecondary}
+                    value={protein}
+                    onChangeText={setProtein}
+                    keyboardType="numeric"
+                    returnKeyType="next"
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Carbs (g)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g., 40"
+                    placeholderTextColor={colors.textSecondary}
+                    value={carbs}
+                    onChangeText={setCarbs}
+                    keyboardType="numeric"
+                    returnKeyType="next"
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Fat (g)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g., 15"
+                    placeholderTextColor={colors.textSecondary}
+                    value={fat}
+                    onChangeText={setFat}
+                    keyboardType="numeric"
+                    returnKeyType="done"
+                    onSubmitEditing={handleAddMeal}
+                  />
+                </View>
+
+                <TouchableOpacity style={styles.submitButton} onPress={handleAddMeal}>
+                  <Text style={styles.submitButtonText}>Add Meal</Text>
+                </TouchableOpacity>
+              </ScrollView>
             </View>
-
-            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Meal Name *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., Chicken Salad"
-                  placeholderTextColor={colors.textSecondary}
-                  value={mealName}
-                  onChangeText={setMealName}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Calories *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., 350"
-                  placeholderTextColor={colors.textSecondary}
-                  value={calories}
-                  onChangeText={setCalories}
-                  keyboardType="numeric"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Protein (g)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., 25"
-                  placeholderTextColor={colors.textSecondary}
-                  value={protein}
-                  onChangeText={setProtein}
-                  keyboardType="numeric"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Carbs (g)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., 40"
-                  placeholderTextColor={colors.textSecondary}
-                  value={carbs}
-                  onChangeText={setCarbs}
-                  keyboardType="numeric"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Fat (g)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., 15"
-                  placeholderTextColor={colors.textSecondary}
-                  value={fat}
-                  onChangeText={setFat}
-                  keyboardType="numeric"
-                />
-              </View>
-
-              <TouchableOpacity style={styles.submitButton} onPress={handleAddMeal}>
-                <Text style={styles.submitButtonText}>Add Meal</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
