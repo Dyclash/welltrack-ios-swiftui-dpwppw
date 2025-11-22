@@ -123,7 +123,7 @@ export default function ProfileScreen() {
   };
 
   const handleContactUs = async () => {
-    const email = 'support@balanceday.app';
+    const email = 'bagrunproductions@gmail.com';
     const subject = 'Balance Day Support';
     const body = 'Hi Balance Day team,\n\n';
     
@@ -134,11 +134,11 @@ export default function ProfileScreen() {
       if (canOpen) {
         await Linking.openURL(url);
       } else {
-        Alert.alert('Error', 'Unable to open email client. Please email us at support@balanceday.app');
+        Alert.alert('Error', 'Unable to open email client. Please email us at bagrunproductions@gmail.com');
       }
     } catch (error) {
       console.error('Contact us error:', error);
-      Alert.alert('Error', 'Unable to open email client. Please email us at support@balanceday.app');
+      Alert.alert('Error', 'Unable to open email client. Please email us at bagrunproductions@gmail.com');
     }
   };
 
