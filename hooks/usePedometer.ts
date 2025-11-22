@@ -6,6 +6,7 @@ export function usePedometer() {
   const [isPedometerAvailable, setIsPedometerAvailable] = useState(false);
   const [currentStepCount, setCurrentStepCount] = useState(0);
   const [todayStepCount, setTodayStepCount] = useState(0);
+  const [stepOffset, setStepOffset] = useState(0);
 
   useEffect(() => {
     let subscription: any = null;
@@ -26,7 +27,7 @@ export function usePedometer() {
             const todayStepCountResult = await Pedometer.getStepCountAsync(start, end);
             if (todayStepCountResult) {
               setTodayStepCount(todayStepCountResult.steps);
-              setCurrentStepCount(todayStepCountResult.steps);
+              setCurrentStepCount(Math.max(0, todayStepCountResult.steps - stepOffset));
               console.log('Today steps:', todayStepCountResult.steps);
             }
           } catch (error) {
@@ -36,7 +37,7 @@ export function usePedometer() {
           // Watch for step count updates
           subscription = Pedometer.watchStepCount(result => {
             console.log('Step count update:', result.steps);
-            setCurrentStepCount(prev => prev + result.steps);
+            setCurrentStepCount(prev => Math.max(0, prev + result.steps));
           });
         }
       } catch (error) {
@@ -51,11 +52,18 @@ export function usePedometer() {
         subscription.remove();
       }
     };
-  }, []);
+  }, [stepOffset]);
+
+  const resetSteps = () => {
+    console.log('Resetting steps. Current count:', currentStepCount);
+    setStepOffset(todayStepCount);
+    setCurrentStepCount(0);
+  };
 
   return {
     isPedometerAvailable,
     currentStepCount,
     todayStepCount,
+    resetSteps,
   };
 }

@@ -18,7 +18,7 @@ const activityTypes = [
 
 export default function ActivityScreen() {
   const { getTodaysActivities, addActivity, deleteActivity } = useData();
-  const { currentStepCount, isPedometerAvailable } = usePedometer();
+  const { currentStepCount, isPedometerAvailable, resetSteps } = usePedometer();
   const activities = getTodaysActivities();
   
   const [showAddModal, setShowAddModal] = useState(false);
@@ -85,6 +85,24 @@ export default function ActivityScreen() {
     );
   };
 
+  const handleResetSteps = () => {
+    Alert.alert(
+      'Reset Steps',
+      'Are you sure you want to reset your step count to zero? This will only reset the displayed count, not your device\'s actual step data.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Reset', 
+          style: 'destructive',
+          onPress: () => {
+            resetSteps();
+            Alert.alert('Success', 'Step count has been reset to zero');
+          }
+        },
+      ]
+    );
+  };
+
   const handleQuickAdd = (type: typeof activityTypes[0]) => {
     const now = new Date();
     const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -129,19 +147,40 @@ export default function ActivityScreen() {
               </Text>
               <Text style={styles.stepsGoal}>/ {stepsGoal.toLocaleString()} steps</Text>
             </View>
+            {isPedometerAvailable && (
+              <TouchableOpacity 
+                style={styles.resetButton}
+                onPress={handleResetSteps}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <IconSymbol 
+                  ios_icon_name="arrow.counterclockwise" 
+                  android_material_icon_name="refresh" 
+                  size={20} 
+                  color={colors.primary}
+                />
+              </TouchableOpacity>
+            )}
           </View>
           <View style={styles.progressBarContainer}>
             <View style={[styles.progressBar, { width: `${Math.min(stepsPercentage, 100)}%` }]} />
           </View>
-          <Text style={styles.remainingText}>
-            {isPedometerAvailable ? (
-              stepsGoal - currentStepCount > 0 
-                ? `${(stepsGoal - currentStepCount).toLocaleString()} steps to go!`
-                : 'Goal reached! 🎉'
-            ) : (
-              'Pedometer not available on this device'
+          <View style={styles.stepsFooter}>
+            <Text style={styles.remainingText}>
+              {isPedometerAvailable ? (
+                stepsGoal - currentStepCount > 0 
+                  ? `${(stepsGoal - currentStepCount).toLocaleString()} steps to go!`
+                  : 'Goal reached! 🎉'
+              ) : (
+                'Pedometer not available on this device'
+              )}
+            </Text>
+            {isPedometerAvailable && (
+              <TouchableOpacity onPress={handleResetSteps}>
+                <Text style={styles.resetText}>Reset</Text>
+              </TouchableOpacity>
             )}
-          </Text>
+          </View>
         </Animated.View>
 
         {/* Stats Grid */}
@@ -441,6 +480,14 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontWeight: '600',
   },
+  resetButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   progressBarContainer: {
     height: 12,
     backgroundColor: colors.background,
@@ -453,10 +500,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     borderRadius: 6,
   },
+  stepsFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   remainingText: {
     fontSize: 14,
     color: colors.textSecondary,
     fontWeight: '600',
+    flex: 1,
+  },
+  resetText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '700',
   },
   statsGrid: {
     flexDirection: 'row',
