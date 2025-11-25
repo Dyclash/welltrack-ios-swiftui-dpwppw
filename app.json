@@ -1,8 +1,7 @@
-
 {
   "expo": {
     "name": "Balance Day",
-    "slug": "balance-day",
+    "slug": "Balance Day",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/f4c9322d-7cdb-4360-960a-a0b06860df7d.png",
@@ -44,5 +43,6 @@
     "extra": {
       "router": {}
     }
-  }
+  },
+  "scheme": "Balance Day"
 }

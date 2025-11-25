@@ -134,7 +134,7 @@ export default function ProfileScreen() {
   };
 
   const handleContactUs = async () => {
-    const email = 'bagrunproductions@gmail.com';
+    const email = 'custinf@zohomail.com';
     const subject = 'Balance Day Support';
     const body = 'Hi Balance Day team,\n\n';
     
@@ -145,11 +145,11 @@ export default function ProfileScreen() {
       if (canOpen) {
         await Linking.openURL(url);
       } else {
-        Alert.alert('Error', 'Unable to open email client. Please email us at bagrunproductions@gmail.com');
+        Alert.alert('Error', 'Unable to open email client. Please email us at custinf@zohomail.com');
       }
     } catch (error) {
       console.error('Contact us error:', error);
-      Alert.alert('Error', 'Unable to open email client. Please email us at bagrunproductions@gmail.com');
+      Alert.alert('Error', 'Unable to open email client. Please email us at custinf@zohomail.com');
     }
   };
 
