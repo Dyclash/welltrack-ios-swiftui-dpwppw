@@ -5,7 +5,7 @@
     "slug": "Balance Day",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/50761b72-cc2c-4194-968e-742607c2ae9a.png",
+    "icon": "./assets/images/3c3fa012-1805-43e8-ad6a-e7d08ec25d60.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -21,7 +21,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/50761b72-cc2c-4194-968e-742607c2ae9a.png",
+        "foregroundImage": "./assets/images/3c3fa012-1805-43e8-ad6a-e7d08ec25d60.png",
         "backgroundColor": "#0A0E27"
       },
       "edgeToEdgeEnabled": true,
