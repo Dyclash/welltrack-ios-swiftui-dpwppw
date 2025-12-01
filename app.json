@@ -5,7 +5,7 @@
     "slug": "Balance Day",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/7681469b-8136-4039-90ae-dc507bda2135.png",
+    "icon": "./assets/images/78bdd65a-d8c9-4585-a998-9ed0ed6f850b.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -21,14 +21,14 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/7681469b-8136-4039-90ae-dc507bda2135.png",
+        "foregroundImage": "./assets/images/78bdd65a-d8c9-4585-a998-9ed0ed6f850b.png",
         "backgroundColor": "#0A0E27"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.bagrun.balanceday"
     },
     "web": {
-      "favicon": "./assets/images/672cc961-a0c9-4d33-a26f-6af797c52296.png",
+      "favicon": "./assets/images/78bdd65a-d8c9-4585-a998-9ed0ed6f850b.png",
       "bundler": "metro"
     },
     "plugins": [
