@@ -27,7 +27,7 @@
       "package": "com.bagrun.balanceday"
     },
     "web": {
-      "favicon": "./assets/images/f4c9322d-7cdb-4360-960a-a0b06860df7d.png",
+      "favicon": "./assets/images/672cc961-a0c9-4d33-a26f-6af797c52296.png",
       "bundler": "metro"
     },
     "plugins": [
